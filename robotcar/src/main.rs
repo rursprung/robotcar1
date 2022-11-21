@@ -1,7 +1,7 @@
 #![no_main]
 #![no_std]
 
-use panic_halt as _;
+use panic_probe as _;
 
 use defmt_rtt as _;
 
