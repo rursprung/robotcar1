@@ -1,0 +1,11 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+  # note: one entry needed per cargo (sub)project:
+  - package-ecosystem: "cargo"
+    directory: "/robotcar"
+    schedule:
+      interval: "weekly"
