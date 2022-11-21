@@ -1,3 +1,5 @@
+#![deny(unsafe_code)]
+#![deny(warnings)]
 #![no_main]
 #![no_std]
 
@@ -131,7 +133,7 @@ mod app {
     }
 
     /// Feed the watchdog periodically to avoid hardware reset.
-    #[task(priority=1, local=[watchdog])]
+    #[task(priority = 1, local = [watchdog])]
     fn feed_watchdog(cx: feed_watchdog::Context) {
         defmt::trace!("feeding the watchdog!");
         cx.local.watchdog.feed();
@@ -140,7 +142,7 @@ mod app {
 
     // see here for why this is EXTI9_5: https://github.com/stm32-rs/stm32f4xx-hal/blob/6d0c29233a4cd1f780b2fef3e47ef091ead6cf4a/src/gpio/exti.rs#L8-L23
     /// Triggers every time the user button is pressed.
-    #[task(binds = EXTI9_5, local = [button])]
+    #[task(binds=  EXTI9_5, local = [button])]
     fn button_click(ctx: button_click::Context) {
         ctx.local.button.clear_interrupt_pending_bit();
 
@@ -149,7 +151,7 @@ mod app {
 
     // see here for why this is EXTI0: https://github.com/stm32-rs/stm32f4xx-hal/blob/6d0c29233a4cd1f780b2fef3e47ef091ead6cf4a/src/gpio/exti.rs#L8-L23
     /// Triggers every time the TOF has data (= new range measurement) available to be consumed.
-    #[task(binds=EXTI0, local=[tof_data_interrupt])]
+    #[task(binds = EXTI0, local = [tof_data_interrupt])]
     fn tof_interrupt_triggered(ctx: tof_interrupt_triggered::Context) {
         ctx.local.tof_data_interrupt.clear_interrupt_pending_bit();
 
