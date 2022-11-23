@@ -18,6 +18,8 @@ panic-probe = { version = "0.3", features = ["print-defmt"] } # Panic behaviour,
 defmt = "0.3"
 defmt-rtt = "0.4"
 
+adafruit-bluefruit-rs = { path = "../adafruit-bluefruit-rs" }
+
 [profile.release]
 codegen-units = 1
 lto = true

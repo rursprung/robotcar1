@@ -1,7 +1,9 @@
-#![deny(unsafe_code)]
+//#![deny(unsafe_code)]
 #![deny(warnings)]
 #![no_main]
 #![no_std]
+
+mod remote_control;
 
 use panic_probe as _;
 
@@ -9,13 +11,14 @@ use defmt_rtt as _;
 
 #[rtic::app(device = stm32f4xx_hal::pac, dispatchers = [EXTI1])]
 mod app {
+    use crate::remote_control;
+    use adafruit_bluefruit_rs::BluefruitLEUARTFriend;
     use stm32f4xx_hal::{
-        dma::StreamsTuple,
+        dma::{traits::StreamISR, Stream2},
         gpio::{Edge, Input, PA0, PA9},
         i2c::I2c,
-        pac::{IWDG, TIM5, USART1},
+        pac::{DMA2, IWDG, TIM5, USART1},
         prelude::*,
-        serial::{self, config::DmaConfig, Rx, Serial, Tx},
         timer::MonoTimerUs,
         watchdog::IndependentWatchdog,
     };
@@ -24,7 +27,9 @@ mod app {
     type MicrosecMono = MonoTimerUs<TIM5>;
 
     #[shared]
-    struct Shared {}
+    struct Shared {
+        bt_module: BluefruitLEUARTFriend,
+    }
 
     #[local]
     struct Local {
@@ -71,17 +76,13 @@ mod app {
         tof_data_interrupt.trigger_on_edge(&mut ctx.device.EXTI, Edge::Falling);
 
         // set up USART (for the bluetooth module)
-        let usart1 = Serial::new(
+        let bt_module = BluefruitLEUARTFriend::new(
             ctx.device.USART1,
-            (gpiob.pb6.into_alternate(), gpioa.pa10.into_alternate()),
-            serial::Config::default()
-                .baudrate(9600.bps())
-                .dma(DmaConfig::Rx),
+            ctx.device.DMA2,
+            gpiob.pb6,
+            gpioa.pa10,
             &clocks,
-        )
-        .expect("USART1 can be set up");
-        let (_usart1_tx, _usart1_rx): (Tx<USART1, u8>, Rx<USART1, u8>) = usart1.split();
-        let _streams = StreamsTuple::new(ctx.device.DMA2);
+        );
 
         // set up servo 1 & 2
         let (_servo1_pwm, _servo2_pwm) = ctx
@@ -112,7 +113,7 @@ mod app {
         defmt::info!("init done");
 
         (
-            Shared {},
+            Shared { bt_module },
             Local {
                 watchdog,
                 button,
@@ -156,5 +157,30 @@ mod app {
         ctx.local.tof_data_interrupt.clear_interrupt_pending_bit();
 
         defmt::info!("TOF interrupt triggered (data ready)");
+    }
+
+    #[task(binds = DMA2_STREAM2, shared = [bt_module])]
+    fn bluetooth_dma_interrupt(mut ctx: bluetooth_dma_interrupt::Context) {
+        defmt::debug!("received DMA2_STREAM2 interrupt (transfer complete)");
+        if Stream2::<DMA2>::get_transfer_complete_flag() {
+            ctx.shared.bt_module.lock(|bt_module| {
+                remote_control::handle_bluetooth_message(bt_module);
+            });
+        }
+    }
+
+    #[task(binds = USART1, shared = [bt_module])]
+    fn bluetooth_receive_interrupt(mut ctx: bluetooth_receive_interrupt::Context) {
+        defmt::debug!("received USART1 interrupt (IDLE)");
+        ctx.shared.bt_module.lock(|bt_module| {
+            remote_control::handle_bluetooth_message(bt_module);
+        });
+
+        unsafe {
+            // taken 1:1 from serial::Rx::clear_idle_interrupt (don't have access to Rx here because it's in the transfer)
+            // see https://github.com/stm32-rs/stm32f4xx-hal/issues/550 which will hopefully provide a proper solution
+            let _ = (*USART1::ptr()).sr.read();
+            let _ = (*USART1::ptr()).dr.read();
+        }
     }
 }

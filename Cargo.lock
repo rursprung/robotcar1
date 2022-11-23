@@ -3,6 +3,19 @@
 version = 3
 
 [[package]]
+name = "adafruit-bluefruit-rs"
+version = "0.1.0"
+dependencies = [
+ "cortex-m",
+ "cortex-m-rtic",
+ "defmt",
+ "defmt-rtt",
+ "fugit",
+ "heapless",
+ "stm32f4xx-hal",
+]
+
+[[package]]
 name = "aho-corasick"
 version = "0.7.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -273,6 +286,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "db04bc24a18b9ea980628ecf00e6c0264f3c1426dac36c00cb49b6fbad8b0743"
 dependencies = [
  "atomic-polyfill",
+ "defmt",
  "hash32",
  "rustc_version 0.4.0",
  "spin",
@@ -432,6 +446,7 @@ dependencies = [
 name = "robotcar"
 version = "0.1.0"
 dependencies = [
+ "adafruit-bluefruit-rs",
  "cortex-m",
  "cortex-m-rt",
  "cortex-m-rtic",
