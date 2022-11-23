@@ -452,6 +452,7 @@ dependencies = [
  "cortex-m-rtic",
  "defmt",
  "defmt-rtt",
+ "embedded-hal 0.2.7",
  "panic-probe",
  "stm32f4xx-hal",
 ]

@@ -4,6 +4,7 @@
 #![no_std]
 
 mod remote_control;
+mod servo;
 
 use panic_probe as _;
 
@@ -11,15 +12,15 @@ use defmt_rtt as _;
 
 #[rtic::app(device = stm32f4xx_hal::pac, dispatchers = [EXTI1])]
 mod app {
-    use crate::remote_control;
+    use crate::{remote_control, servo::Servo};
     use adafruit_bluefruit_rs::BluefruitLEUARTFriend;
     use stm32f4xx_hal::{
         dma::{traits::StreamISR, Stream2},
         gpio::{Edge, Input, PA0, PA9},
         i2c::I2c,
-        pac::{DMA2, IWDG, TIM5, USART1},
+        pac::{DMA2, IWDG, TIM3, TIM5, USART1},
         prelude::*,
-        timer::MonoTimerUs,
+        timer::{MonoTimerUs, PwmChannel},
         watchdog::IndependentWatchdog,
     };
 
@@ -29,6 +30,7 @@ mod app {
     #[shared]
     struct Shared {
         bt_module: BluefruitLEUARTFriend,
+        steering: Servo<PwmChannel<TIM3, 0>>,
     }
 
     #[local]
@@ -85,7 +87,7 @@ mod app {
         );
 
         // set up servo 1 & 2
-        let (_servo1_pwm, _servo2_pwm) = ctx
+        let (servo1_pwm, _servo2_pwm) = ctx
             .device
             .TIM3
             .pwm_hz(
@@ -94,6 +96,7 @@ mod app {
                 &clocks,
             )
             .split();
+        let servo1 = Servo::new(servo1_pwm, 3500, 6000, 90);
 
         // set up motor 1 & 2
         let _motor1_in1 = gpiob.pb5.into_push_pull_output();
@@ -113,7 +116,10 @@ mod app {
         defmt::info!("init done");
 
         (
-            Shared { bt_module },
+            Shared {
+                bt_module,
+                steering: servo1,
+            },
             Local {
                 watchdog,
                 button,
@@ -159,21 +165,25 @@ mod app {
         defmt::info!("TOF interrupt triggered (data ready)");
     }
 
-    #[task(binds = DMA2_STREAM2, shared = [bt_module])]
+    #[task(binds = DMA2_STREAM2, shared = [bt_module, steering])]
     fn bluetooth_dma_interrupt(mut ctx: bluetooth_dma_interrupt::Context) {
         defmt::debug!("received DMA2_STREAM2 interrupt (transfer complete)");
         if Stream2::<DMA2>::get_transfer_complete_flag() {
             ctx.shared.bt_module.lock(|bt_module| {
-                remote_control::handle_bluetooth_message(bt_module);
+                ctx.shared.steering.lock(|steering| {
+                    remote_control::handle_bluetooth_message(bt_module, steering);
+                });
             });
         }
     }
 
-    #[task(binds = USART1, shared = [bt_module])]
+    #[task(binds = USART1, shared = [bt_module, steering])]
     fn bluetooth_receive_interrupt(mut ctx: bluetooth_receive_interrupt::Context) {
         defmt::debug!("received USART1 interrupt (IDLE)");
         ctx.shared.bt_module.lock(|bt_module| {
-            remote_control::handle_bluetooth_message(bt_module);
+            ctx.shared.steering.lock(|steering| {
+                remote_control::handle_bluetooth_message(bt_module, steering);
+            });
         });
 
         unsafe {
