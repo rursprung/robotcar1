@@ -1,14 +1,12 @@
-use crate::servo::Servo;
+use crate::car::Car;
 use adafruit_bluefruit_rs::bluefruit_protocol::{
     Button, ButtonEvent, ButtonState, ControllerEvent,
 };
 use adafruit_bluefruit_rs::{bluefruit_protocol, BluefruitLEUARTFriend};
 use embedded_hal::PwmPin;
 
-pub fn handle_bluetooth_message<PWM>(
-    bt_module: &mut BluefruitLEUARTFriend,
-    steering: &mut Servo<PWM>,
-) where
+pub fn handle_bluetooth_message<PWM>(bt_module: &mut BluefruitLEUARTFriend, car: &mut Car<PWM>)
+where
     PWM: PwmPin<Duty = u16>,
 {
     let (filled_buffer, _) = bt_module
@@ -26,7 +24,7 @@ pub fn handle_bluetooth_message<PWM>(
 
         match event {
             Ok(event) => {
-                handle_event(event, steering);
+                handle_event(event, car);
             }
             Err(err) => {
                 defmt::error!("error in event parsing: {}", err);
@@ -38,31 +36,31 @@ pub fn handle_bluetooth_message<PWM>(
     bt_module.rx_buffer = Some(filled_buffer);
 }
 
-fn handle_event<PWM>(event: ControllerEvent, steering: &mut Servo<PWM>)
+fn handle_event<PWM>(event: ControllerEvent, car: &mut Car<PWM>)
 where
     PWM: PwmPin<Duty = u16>,
 {
     match event {
-        ControllerEvent::ButtonEvent(button_event) => handle_button_event(button_event, steering),
+        ControllerEvent::ButtonEvent(button_event) => handle_button_event(button_event, car),
         evt => {
             defmt::warn!("unimplemented event {}", evt);
         }
     }
 }
 
-fn handle_button_event<PWM>(event: ButtonEvent, steering: &mut Servo<PWM>)
+fn handle_button_event<PWM>(event: ButtonEvent, car: &mut Car<PWM>)
 where
     PWM: PwmPin<Duty = u16>,
 {
     match (event.button(), event.state()) {
         (Button::Left, ButtonState::Pressed) => {
-            steering.steer(0);
+            car.steer_left();
         }
         (Button::Right, ButtonState::Pressed) => {
-            steering.steer(180);
+            car.steer_right();
         }
         evt => {
-            steering.steer(90);
+            car.steer_center();
             defmt::warn!("unimplemented event {}", evt);
         }
     }

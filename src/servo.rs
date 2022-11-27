@@ -1,16 +1,24 @@
 use embedded_hal::PwmPin;
 
-pub struct Servo<PWM> {
+pub struct Servo<PWM>
+where
+    PWM: PwmPin,
+{
     pwm: PWM,
-    min_duty: u16,
-    max_duty: u16,
+    min_duty: PWM::Duty,
+    max_duty: PWM::Duty,
 }
 
 impl<PWM> Servo<PWM>
 where
     PWM: PwmPin<Duty = u16>,
 {
-    pub fn new(mut pwm: PWM, min_duty: u16, max_duty: u16, initial_angle: u8) -> Servo<PWM> {
+    pub fn new(
+        mut pwm: PWM,
+        min_duty: PWM::Duty,
+        max_duty: PWM::Duty,
+        initial_angle: u8,
+    ) -> Servo<PWM> {
         pwm.enable();
         let mut servo = Servo {
             pwm,
@@ -27,7 +35,7 @@ where
         if angle > 180 {
             panic!("angle > 180"); // TODO: change to result!
         }
-        let duty = (((self.max_duty - self.min_duty) as f32 * (angle as f32 / 180.0)) as u16
+        let duty = (((self.max_duty - self.min_duty) as f32 * (angle as f32 / 180.0)) as PWM::Duty
             + self.min_duty) as u16;
         defmt::info!(
             "setting steering angle to {}, resulting in duty {}",
