@@ -19,8 +19,12 @@ jobs:
       - name: Install flip-link
         run: cargo install flip-link
       - uses: actions/checkout@v3
-      - name: Build
-        run: cargo build
+      - uses: actions-rs/cargo@v1
+        with:
+          command: build
+      - uses: actions-rs/cargo@v1
+        with:
+          command: check
       # no tests available for now => no test step as it'd fail otherwise
       - uses: actions-rs/cargo@v1
         with:
@@ -29,3 +33,6 @@ jobs:
       - uses: actions-rs/cargo@v1
         with:
           command: clippy
+      - uses: actions-rs/cargo@v1
+        with:
+          command: audit
