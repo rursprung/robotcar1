@@ -21,6 +21,7 @@ defmt = "0.3"
 defmt-rtt = "0.4"
 
 adafruit-bluefruit-rs = { path = "../adafruit-bluefruit-rs" }
+tb6612fng = { git = "https://github.com/rursprung/tb6612fng-rs.git", features = ["defmt"] }
 
 [profile.release]
 codegen-units = 1

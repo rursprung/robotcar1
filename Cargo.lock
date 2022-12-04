@@ -455,6 +455,7 @@ dependencies = [
  "embedded-hal 0.2.7",
  "panic-probe",
  "stm32f4xx-hal",
+ "tb6612fng",
 ]
 
 [[package]]
@@ -586,6 +587,15 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "tb6612fng"
+version = "0.1.0"
+source = "git+https://github.com/rursprung/tb6612fng-rs.git#ff52ff55a0a6f65b0b7c6bdfb46e18a83bd27c61"
+dependencies = [
+ "defmt",
+ "embedded-hal 0.2.7",
 ]
 
 [[package]]

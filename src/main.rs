@@ -11,6 +11,14 @@ use panic_probe as _;
 
 use defmt_rtt as _;
 
+use stm32f4xx_hal::{
+    gpio::{Output, PB4, PB5},
+    pac::{TIM2, TIM3},
+    timer::PwmChannel,
+};
+
+pub type CarT = car::Car<PwmChannel<TIM3, 0>, PB5<Output>, PB4<Output>, PwmChannel<TIM2, 2>>;
+
 #[rtic::app(device = stm32f4xx_hal::pac, dispatchers = [EXTI1])]
 mod app {
     use crate::{car::Car, remote_control::RemoteControl, servo::Servo};
@@ -19,11 +27,12 @@ mod app {
         dma::{traits::StreamISR, Stream2},
         gpio::{Edge, Input, PA0, PA9},
         i2c::I2c,
-        pac::{DMA2, IWDG, TIM3, TIM5, USART1},
+        pac::{DMA2, IWDG, TIM5, USART1},
         prelude::*,
-        timer::{MonoTimerUs, PwmChannel},
+        timer::MonoTimerUs,
         watchdog::IndependentWatchdog,
     };
+    use tb6612fng::Motor;
 
     #[monotonic(binds = TIM5, default = true)]
     type MicrosecMono = MonoTimerUs<TIM5>;
@@ -31,7 +40,7 @@ mod app {
     #[shared]
     struct Shared {
         remote_control: RemoteControl,
-        car: Car<PwmChannel<TIM3, 0>>,
+        car: crate::CarT,
     }
 
     #[local]
@@ -102,12 +111,12 @@ mod app {
         // TODO: try to get a bit more out of it to get the maximum & document that this was found using trial & error
         let servo1 = Servo::new(servo1_pwm, 3500, 6000, 90);
 
-        // set up motor 1 & 2
-        let _motor1_in1 = gpiob.pb5.into_push_pull_output();
-        let _motor1_in2 = gpiob.pb4.into_push_pull_output();
-        let _motor2_in1 = gpioa.pa1.into_push_pull_output();
-        let _motor2_in2 = gpioa.pa4.into_push_pull_output();
-        let (_motor2_pwm, _motor1_pwm) = ctx
+        // set up motor A & B
+        let motor_a_in1 = gpiob.pb5.into_push_pull_output();
+        let motor_a_in2 = gpiob.pb4.into_push_pull_output();
+        let _motor_b_in1 = gpioa.pa1.into_push_pull_output();
+        let _motor_b_in2 = gpioa.pa4.into_push_pull_output();
+        let (_motor_b_pwm, motor_a_pwm) = ctx
             .device
             .TIM2
             .pwm_hz(
@@ -116,8 +125,9 @@ mod app {
                 &clocks,
             )
             .split();
+        let motor1 = Motor::new(motor_a_in1, motor_a_in2, motor_a_pwm);
 
-        let car = Car::new(servo1);
+        let car = Car::new(servo1, motor1);
 
         defmt::info!("init done");
 

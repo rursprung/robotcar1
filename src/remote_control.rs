@@ -1,27 +1,28 @@
-use crate::car::Car;
+use crate::CarT as Car;
 use adafruit_bluefruit_rs::bluefruit_protocol::{
     Button, ButtonEvent, ButtonState, ControllerEvent,
 };
 use adafruit_bluefruit_rs::{bluefruit_protocol, BluefruitLEUARTFriend};
-use embedded_hal::PwmPin;
+use core::cmp::{max, min};
 
 pub struct RemoteControl {
     bt_module: BluefruitLEUARTFriend,
+    current_speed: i8,
 }
 
 impl RemoteControl {
     pub fn new(bt_module: BluefruitLEUARTFriend) -> RemoteControl {
-        RemoteControl { bt_module }
+        RemoteControl {
+            bt_module,
+            current_speed: 0,
+        }
     }
 
-    pub fn handle_bluetooth_message<PWM>(&mut self, car: &mut Car<PWM>)
-    where
-        PWM: PwmPin<Duty = u16>,
-    {
-        let bt_module = &mut self.bt_module;
-        let (filled_buffer, _) = bt_module
+    pub fn handle_bluetooth_message(&mut self, car: &mut Car) {
+        let (filled_buffer, _) = self
+            .bt_module
             .rx_transfer
-            .next_transfer(bt_module.rx_buffer.take().unwrap())
+            .next_transfer(self.bt_module.rx_buffer.take().unwrap())
             .unwrap();
         defmt::debug!(
             "bluetooth: DMA transfer complete, received {:a}",
@@ -34,7 +35,7 @@ impl RemoteControl {
 
             match event {
                 Ok(event) => {
-                    handle_event(event, car);
+                    self.handle_event(event, car);
                 }
                 Err(err) => {
                     defmt::error!("error in event parsing: {}", err);
@@ -43,38 +44,52 @@ impl RemoteControl {
         }
 
         // switch out the buffers
-        bt_module.rx_buffer = Some(filled_buffer);
+        self.bt_module.rx_buffer = Some(filled_buffer);
     }
-}
 
-fn handle_event<PWM>(event: ControllerEvent, car: &mut Car<PWM>)
-where
-    PWM: PwmPin<Duty = u16>,
-{
-    match event {
-        ControllerEvent::ButtonEvent(button_event) => handle_button_event(button_event, car),
-        evt => {
-            defmt::error!("unimplemented event {}", evt);
+    fn handle_event(&mut self, event: ControllerEvent, car: &mut Car) {
+        match event {
+            ControllerEvent::ButtonEvent(button_event) => {
+                self.handle_button_event(button_event, car)
+            }
+            evt => {
+                defmt::error!("unimplemented event {}", evt);
+            }
         }
     }
-}
 
-fn handle_button_event<PWM>(event: ButtonEvent, car: &mut Car<PWM>)
-where
-    PWM: PwmPin<Duty = u16>,
-{
-    match (event.button(), event.state()) {
-        (Button::Left, ButtonState::Pressed) => {
-            car.steer_left();
+    fn handle_button_event(&mut self, event: ButtonEvent, car: &mut Car) {
+        match (event.button(), event.state()) {
+            (Button::Left, ButtonState::Pressed) => {
+                car.steer_left();
+            }
+            (Button::Right, ButtonState::Pressed) => {
+                car.steer_right();
+            }
+            (Button::Left | Button::Right, ButtonState::Released) => {
+                car.steer_center();
+            }
+            (Button::Up, ButtonState::Pressed) => {
+                self.current_speed = min(self.current_speed + 25, 100);
+                self.handle_speed_change(car);
+            }
+            (Button::Down, ButtonState::Pressed) => {
+                self.current_speed = max(self.current_speed - 25, -100);
+                self.handle_speed_change(car);
+            }
+            evt => {
+                defmt::error!("unimplemented event {}", evt);
+            }
         }
-        (Button::Right, ButtonState::Pressed) => {
-            car.steer_right();
-        }
-        (Button::Left | Button::Right, ButtonState::Released) => {
-            car.steer_center();
-        }
-        evt => {
-            defmt::error!("unimplemented event {}", evt);
+    }
+
+    fn handle_speed_change(&mut self, car: &mut Car) {
+        if self.current_speed > 0 {
+            car.drive_forward(self.current_speed as u8);
+        } else if self.current_speed < 0 {
+            car.drive_backwards((-self.current_speed) as u8);
+        } else {
+            car.halt();
         }
     }
 }
