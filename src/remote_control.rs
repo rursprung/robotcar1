@@ -5,35 +5,46 @@ use adafruit_bluefruit_rs::bluefruit_protocol::{
 use adafruit_bluefruit_rs::{bluefruit_protocol, BluefruitLEUARTFriend};
 use embedded_hal::PwmPin;
 
-pub fn handle_bluetooth_message<PWM>(bt_module: &mut BluefruitLEUARTFriend, car: &mut Car<PWM>)
-where
-    PWM: PwmPin<Duty = u16>,
-{
-    let (filled_buffer, _) = bt_module
-        .rx_transfer
-        .next_transfer(bt_module.rx_buffer.take().unwrap())
-        .unwrap();
-    defmt::debug!(
-        "bluetooth: DMA transfer complete, received {:a}",
-        filled_buffer
-    );
+pub struct RemoteControl {
+    bt_module: BluefruitLEUARTFriend,
+}
 
-    let events = bluefruit_protocol::parse::<4>(filled_buffer);
-    for event in events {
-        defmt::info!("received event over bluetooth: {}", &event);
-
-        match event {
-            Ok(event) => {
-                handle_event(event, car);
-            }
-            Err(err) => {
-                defmt::error!("error in event parsing: {}", err);
-            }
-        }
+impl RemoteControl {
+    pub fn new(bt_module: BluefruitLEUARTFriend) -> RemoteControl {
+        RemoteControl { bt_module }
     }
 
-    // switch out the buffers
-    bt_module.rx_buffer = Some(filled_buffer);
+    pub fn handle_bluetooth_message<PWM>(&mut self, car: &mut Car<PWM>)
+    where
+        PWM: PwmPin<Duty = u16>,
+    {
+        let bt_module = &mut self.bt_module;
+        let (filled_buffer, _) = bt_module
+            .rx_transfer
+            .next_transfer(bt_module.rx_buffer.take().unwrap())
+            .unwrap();
+        defmt::debug!(
+            "bluetooth: DMA transfer complete, received {:a}",
+            filled_buffer
+        );
+
+        let events = bluefruit_protocol::parse::<4>(filled_buffer);
+        for event in events {
+            defmt::info!("received event over bluetooth: {}", &event);
+
+            match event {
+                Ok(event) => {
+                    handle_event(event, car);
+                }
+                Err(err) => {
+                    defmt::error!("error in event parsing: {}", err);
+                }
+            }
+        }
+
+        // switch out the buffers
+        bt_module.rx_buffer = Some(filled_buffer);
+    }
 }
 
 fn handle_event<PWM>(event: ControllerEvent, car: &mut Car<PWM>)
@@ -43,7 +54,7 @@ where
     match event {
         ControllerEvent::ButtonEvent(button_event) => handle_button_event(button_event, car),
         evt => {
-            defmt::warn!("unimplemented event {}", evt);
+            defmt::error!("unimplemented event {}", evt);
         }
     }
 }
@@ -59,9 +70,11 @@ where
         (Button::Right, ButtonState::Pressed) => {
             car.steer_right();
         }
-        evt => {
+        (Button::Left | Button::Right, ButtonState::Released) => {
             car.steer_center();
-            defmt::warn!("unimplemented event {}", evt);
+        }
+        evt => {
+            defmt::error!("unimplemented event {}", evt);
         }
     }
 }
