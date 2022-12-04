@@ -77,6 +77,10 @@ impl RemoteControl {
                 self.current_speed = max(self.current_speed - 25, -100);
                 self.handle_speed_change(car);
             }
+            (Button::Button1, ButtonState::Pressed) => {
+                self.current_speed = 0;
+                self.handle_speed_change(car);
+            }
             evt => {
                 defmt::error!("unimplemented event {}", evt);
             }
