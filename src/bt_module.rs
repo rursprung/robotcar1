@@ -1,4 +1,3 @@
-use adafruit_bluefruit_protocol;
 use stm32f4xx_hal::{
     dma::{config::DmaConfig, PeripheralToMemory, Stream2, StreamsTuple, Transfer},
     gpio::{PA10, PB6},

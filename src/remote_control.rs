@@ -5,7 +5,7 @@ use adafruit_bluefruit_protocol::{
     button_event::{Button, ButtonEvent, ButtonState},
     ControllerEvent,
 };
-use core::cmp::{max, min};
+use core::cmp::{max, min, Ordering};
 
 pub struct RemoteControl {
     bt_module: BluefruitLEUARTFriend,
@@ -87,12 +87,10 @@ impl RemoteControl {
     }
 
     fn handle_speed_change(&mut self, car: &mut Car) {
-        if self.current_speed > 0 {
-            car.drive_forward(self.current_speed as u8);
-        } else if self.current_speed < 0 {
-            car.drive_backwards((-self.current_speed) as u8);
-        } else {
-            car.halt();
+        match self.current_speed.cmp(&0) {
+            Ordering::Greater => car.drive_forward(self.current_speed as u8),
+            Ordering::Less => car.drive_backwards((-self.current_speed) as u8),
+            Ordering::Equal => car.halt(),
         }
     }
 }
