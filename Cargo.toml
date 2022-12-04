@@ -20,7 +20,7 @@ panic-probe = { version = "0.3", features = ["print-defmt"] } # Panic behaviour,
 defmt = "0.3"
 defmt-rtt = "0.4"
 
-adafruit-bluefruit-rs = { path = "../adafruit-bluefruit-rs" }
+adafruit-bluefruit-protocol = { git = "https://github.com/rursprung/adafruit-bluefruit-protocol-rs.git", default-features = false, features = ["button_event", "defmt"] }
 tb6612fng = { git = "https://github.com/rursprung/tb6612fng-rs.git", features = ["defmt"] }
 
 [profile.release]

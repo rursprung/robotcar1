@@ -1,8 +1,10 @@
+use crate::bt_module::BluefruitLEUARTFriend;
 use crate::CarT as Car;
-use adafruit_bluefruit_rs::bluefruit_protocol::{
-    Button, ButtonEvent, ButtonState, ControllerEvent,
+use adafruit_bluefruit_protocol::{
+    self,
+    button_event::{Button, ButtonEvent, ButtonState},
+    ControllerEvent,
 };
-use adafruit_bluefruit_rs::{bluefruit_protocol, BluefruitLEUARTFriend};
 use core::cmp::{max, min};
 
 pub struct RemoteControl {
@@ -29,7 +31,7 @@ impl RemoteControl {
             filled_buffer
         );
 
-        let events = bluefruit_protocol::parse::<4>(filled_buffer);
+        let events = adafruit_bluefruit_protocol::parse::<4>(filled_buffer);
         for event in events {
             defmt::info!("received event over bluetooth: {}", &event);
 
@@ -51,9 +53,6 @@ impl RemoteControl {
         match event {
             ControllerEvent::ButtonEvent(button_event) => {
                 self.handle_button_event(button_event, car)
-            }
-            evt => {
-                defmt::error!("unimplemented event {}", evt);
             }
         }
     }

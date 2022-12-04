@@ -3,16 +3,11 @@
 version = 3
 
 [[package]]
-name = "adafruit-bluefruit-rs"
+name = "adafruit-bluefruit-protocol"
 version = "0.1.0"
 dependencies = [
- "cortex-m",
- "cortex-m-rtic",
  "defmt",
- "defmt-rtt",
- "fugit",
  "heapless",
- "stm32f4xx-hal",
 ]
 
 [[package]]
@@ -446,7 +441,7 @@ dependencies = [
 name = "robotcar"
 version = "0.1.0"
 dependencies = [
- "adafruit-bluefruit-rs",
+ "adafruit-bluefruit-protocol",
  "cortex-m",
  "cortex-m-rt",
  "cortex-m-rtic",

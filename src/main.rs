@@ -3,6 +3,7 @@
 #![no_main]
 #![no_std]
 
+mod bt_module;
 mod car;
 mod remote_control;
 mod servo;
@@ -21,8 +22,9 @@ pub type CarT = car::Car<PwmChannel<TIM3, 0>, PB5<Output>, PB4<Output>, PwmChann
 
 #[rtic::app(device = stm32f4xx_hal::pac, dispatchers = [EXTI1])]
 mod app {
-    use crate::{car::Car, remote_control::RemoteControl, servo::Servo};
-    use adafruit_bluefruit_rs::BluefruitLEUARTFriend;
+    use crate::{
+        bt_module::BluefruitLEUARTFriend, car::Car, remote_control::RemoteControl, servo::Servo,
+    };
     use stm32f4xx_hal::{
         dma::{traits::StreamISR, Stream2},
         gpio::{Edge, Input, PA0, PA9},
