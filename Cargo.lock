@@ -496,7 +496,7 @@ dependencies = [
 [[package]]
 name = "tb6612fng"
 version = "0.1.0"
-source = "git+https://github.com/rursprung/tb6612fng-rs.git#ff52ff55a0a6f65b0b7c6bdfb46e18a83bd27c61"
+source = "git+https://github.com/rursprung/tb6612fng-rs.git#d87f5749366324ed74554a5e3eba85b8bdb13934"
 dependencies = [
  "defmt",
  "embedded-hal 0.2.7",
