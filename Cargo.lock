@@ -5,7 +5,7 @@ version = 3
 [[package]]
 name = "adafruit-bluefruit-protocol"
 version = "0.1.0"
-source = "git+https://github.com/rursprung/adafruit-bluefruit-protocol-rs.git#34e5bfd13b452fb8bd267b7d9ef54907f81408a6"
+source = "git+https://github.com/rursprung/adafruit-bluefruit-protocol-rs.git#3429eaa944f005f4239392aeadd9be7efcbe0d49"
 dependencies = [
  "defmt",
  "heapless",
