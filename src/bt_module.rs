@@ -22,8 +22,6 @@ impl BluefruitLEUARTFriend {
     /// set up the Adafruit Bluefruit UART LE Friend connected on PB6 & PA10
     ///
     /// note: it will use DMA for the UART connection, the corresponding interrupt must be handled.
-    ///
-    /// TODO: get rid of all stm32f4xx_hal references, use generic embedded-hal traits!
     pub fn new(
         pac_usart1: USART1,
         pac_dma2: DMA2,
