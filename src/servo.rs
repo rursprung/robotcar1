@@ -37,7 +37,7 @@ where
         }
         let duty = (((self.max_duty - self.min_duty) as f32 * (angle as f32 / 180.0)) as PWM::Duty
             + self.min_duty) as u16;
-        defmt::info!(
+        defmt::debug!(
             "setting steering angle to {}, resulting in duty {}",
             angle,
             duty

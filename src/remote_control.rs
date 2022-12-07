@@ -33,7 +33,7 @@ impl RemoteControl {
 
         let events = adafruit_bluefruit_protocol::parse::<4>(filled_buffer);
         for event in events {
-            defmt::info!("received event over bluetooth: {}", &event);
+            defmt::debug!("received event over bluetooth: {}", &event);
 
             match event {
                 Ok(event) => {
@@ -80,8 +80,11 @@ impl RemoteControl {
                 self.current_speed = 0;
                 self.handle_speed_change(car);
             }
+            (Button::Up | Button::Down | Button::Button1, ButtonState::Released) => {
+                defmt::debug!("button released which doesn't need any action");
+            }
             evt => {
-                defmt::error!("unimplemented event {}", evt);
+                defmt::warn!("unimplemented event {}", evt);
             }
         }
     }
