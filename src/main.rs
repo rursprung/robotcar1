@@ -66,6 +66,8 @@ mod app {
 
     #[init]
     fn init(mut ctx: init::Context) -> (Shared, Local, init::Monotonics) {
+        defmt::info!("booting system...");
+
         let mut syscfg = ctx.device.SYSCFG.constrain();
 
         let rcc = ctx.device.RCC.constrain();
