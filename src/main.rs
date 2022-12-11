@@ -7,23 +7,35 @@ mod bt_module;
 mod car;
 mod remote_control;
 mod servo;
+mod tof_sensor;
 
 use panic_probe as _;
 
 use defmt_rtt as _;
 
 use stm32f4xx_hal::{
-    gpio::{Output, PB4, PB5},
+    gpio::{Output, PB4, PB5, PB8, PB9},
+    i2c::{self, I2c1},
     pac::{TIM2, TIM3},
     timer::PwmChannel,
 };
+use tof_sensor::TOFSensor;
 
-pub type CarT = car::Car<PwmChannel<TIM3, 0>, PB5<Output>, PB4<Output>, PwmChannel<TIM2, 2>>;
+type I2C1 = I2c1<(PB8, PB9)>;
+pub type CarT = car::Car<
+    PwmChannel<TIM3, 0>,
+    PB5<Output>,
+    PB4<Output>,
+    PwmChannel<TIM2, 2>,
+    TOFSensor<I2C1, i2c::Error>,
+    vl53l1x_uld::Error<i2c::Error>,
+>;
 
 #[rtic::app(device = stm32f4xx_hal::pac, dispatchers = [EXTI1])]
 mod app {
     use crate::{
         bt_module::BluefruitLEUARTFriend, car::Car, remote_control::RemoteControl, servo::Servo,
+        tof_sensor::TOFSensor,
     };
     use stm32f4xx_hal::{
         dma::{traits::StreamISR, Stream2},
@@ -49,7 +61,7 @@ mod app {
     struct Local {
         watchdog: IndependentWatchdog,
         button: PA9<Input>,
-        tof_data_interrupt: PA0<Input>,
+        tof_data_interrupt_pin: PA0<Input>,
     }
 
     #[init]
@@ -81,13 +93,15 @@ mod app {
         button.trigger_on_edge(&mut ctx.device.EXTI, Edge::Falling);
 
         // set up I2C
-        let _i2c = I2c::new(ctx.device.I2C1, (gpiob.pb8, gpiob.pb9), 400.kHz(), &clocks);
+        let i2c = I2c::new(ctx.device.I2C1, (gpiob.pb8, gpiob.pb9), 400.kHz(), &clocks);
 
         // set up the interrupt for the TOF
-        let mut tof_data_interrupt = gpioa.pa0.into_pull_down_input();
-        tof_data_interrupt.make_interrupt_source(&mut syscfg);
-        tof_data_interrupt.enable_interrupt(&mut ctx.device.EXTI);
-        tof_data_interrupt.trigger_on_edge(&mut ctx.device.EXTI, Edge::Falling);
+        let mut tof_data_interrupt_pin = gpioa.pa0.into_pull_down_input();
+        tof_data_interrupt_pin.make_interrupt_source(&mut syscfg);
+        tof_data_interrupt_pin.enable_interrupt(&mut ctx.device.EXTI);
+        tof_data_interrupt_pin.trigger_on_edge(&mut ctx.device.EXTI, Edge::Falling);
+
+        let tof_sensor = TOFSensor::new(i2c).expect("could initialise TOF sensor");
 
         // set up USART (for the bluetooth module)
         let bt_module = BluefruitLEUARTFriend::new(
@@ -129,7 +143,7 @@ mod app {
             .split();
         let motor1 = Motor::new(motor_a_in1, motor_a_in2, motor_a_pwm);
 
-        let car = Car::new(servo1, motor1);
+        let car = Car::new(servo1, motor1, tof_sensor);
 
         defmt::info!("init done");
 
@@ -141,7 +155,7 @@ mod app {
             Local {
                 watchdog,
                 button,
-                tof_data_interrupt,
+                tof_data_interrupt_pin,
             },
             init::Monotonics(mono),
         )
@@ -176,11 +190,14 @@ mod app {
 
     // see here for why this is EXTI0: https://github.com/stm32-rs/stm32f4xx-hal/blob/6d0c29233a4cd1f780b2fef3e47ef091ead6cf4a/src/gpio/exti.rs#L8-L23
     /// Triggers every time the TOF has data (= new range measurement) available to be consumed.
-    #[task(binds = EXTI0, local = [tof_data_interrupt])]
-    fn tof_interrupt_triggered(ctx: tof_interrupt_triggered::Context) {
-        ctx.local.tof_data_interrupt.clear_interrupt_pending_bit();
-
-        defmt::info!("TOF interrupt triggered (data ready)");
+    #[task(binds = EXTI0, local = [tof_data_interrupt_pin], shared = [car])]
+    fn tof_interrupt_triggered(mut ctx: tof_interrupt_triggered::Context) {
+        ctx.local
+            .tof_data_interrupt_pin
+            .clear_interrupt_pending_bit();
+        ctx.shared.car.lock(|car| {
+            car.handle_distance_sensor_interrupt();
+        });
     }
 
     #[task(binds = DMA2_STREAM2, shared = [remote_control, car])]

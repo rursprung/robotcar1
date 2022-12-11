@@ -1,29 +1,44 @@
 use crate::servo::Servo;
+use crate::tof_sensor::DistanceSensor;
+use core::fmt::Debug;
+use core::marker::PhantomData;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::PwmPin;
 use tb6612fng::Motor;
 
 /// Represents the robot car.
-pub struct Car<ServoPwm, MAIN1, MAIN2, MAPWM>
+pub struct Car<ServoPwm, MAIN1, MAIN2, MAPWM, D, DE>
 where
     ServoPwm: PwmPin,
+    D: DistanceSensor<DE>,
 {
     steering: Servo<ServoPwm>,
     motor: Motor<MAIN1, MAIN2, MAPWM>,
+    front_distance_sensor: D,
+    /// Needed to be able to specify the `DE` type parameter
+    _distance_sensor_error: PhantomData<DE>,
 }
 
-impl<ServoPwm, MAIN1, MAIN2, MAPWM> Car<ServoPwm, MAIN1, MAIN2, MAPWM>
+impl<ServoPwm, MAIN1, MAIN2, MAPWM, D, DE> Car<ServoPwm, MAIN1, MAIN2, MAPWM, D, DE>
 where
     ServoPwm: PwmPin<Duty = u16>,
     MAIN1: OutputPin,
     MAIN2: OutputPin,
     MAPWM: PwmPin<Duty = u16>,
+    D: DistanceSensor<DE>,
+    DE: Debug,
 {
     pub fn new(
         steering: Servo<ServoPwm>,
         motor: Motor<MAIN1, MAIN2, MAPWM>,
-    ) -> Car<ServoPwm, MAIN1, MAIN2, MAPWM> {
-        Car { steering, motor }
+        distance_sensor: D,
+    ) -> Car<ServoPwm, MAIN1, MAIN2, MAPWM, D, DE> {
+        Car {
+            steering,
+            motor,
+            front_distance_sensor: distance_sensor,
+            _distance_sensor_error: PhantomData,
+        }
     }
 
     pub fn steer_left(&mut self) {
@@ -52,5 +67,16 @@ where
 
     pub fn halt(&mut self) {
         self.motor.brake();
+    }
+
+    pub fn handle_distance_sensor_interrupt(&mut self) {
+        match self.front_distance_sensor.get_distance_in_mm() {
+            Ok(distance) => defmt::info!("Received range: {}mm", distance),
+            Err(e) => defmt::error!(
+                "Failed to get distance from TOF: {}",
+                defmt::Debug2Format(&e)
+            ),
+        };
+        self.front_distance_sensor.clear_interrupt().ok();
     }
 }
