@@ -15,6 +15,8 @@ where
     steering: Servo<ServoPwm>,
     motor: Motor<MAIN1, MAIN2, MAPWM>,
     front_distance_sensor: D,
+    /// The latest measurement of the front distance (if available)
+    latest_front_distance_in_mm: Option<u16>,
     /// Needed to be able to specify the `DE` type parameter
     _distance_sensor_error: PhantomData<DE>,
 }
@@ -37,6 +39,7 @@ where
             steering,
             motor,
             front_distance_sensor: distance_sensor,
+            latest_front_distance_in_mm: None,
             _distance_sensor_error: PhantomData,
         }
     }
@@ -69,14 +72,33 @@ where
         self.motor.brake();
     }
 
-    pub fn handle_distance_sensor_interrupt(&mut self) {
-        match self.front_distance_sensor.get_distance_in_mm() {
-            Ok(distance) => defmt::info!("Received range: {}mm", distance),
-            Err(e) => defmt::error!(
-                "Failed to get distance from TOF: {}",
-                defmt::Debug2Format(&e)
-            ),
+    pub fn handle_distance_sensor_interrupt(&mut self) -> Result<(), DE> {
+        if let Err(e) = self.front_distance_sensor.clear_interrupt() {
+            self.latest_front_distance_in_mm = None;
+            return Err(e);
+        }
+        let result = match self.front_distance_sensor.get_distance_in_mm() {
+            Ok(distance) => {
+                defmt::debug!("Received range: {}mm", distance);
+                self.latest_front_distance_in_mm = Some(distance);
+                Ok(())
+            }
+            Err(e) => {
+                defmt::error!(
+                    "Failed to get distance from TOF: {}",
+                    defmt::Debug2Format(&e)
+                );
+                self.latest_front_distance_in_mm = None;
+                Err(e)
+            }
         };
-        self.front_distance_sensor.clear_interrupt().ok();
+
+        self.handle_distance_update();
+
+        result
+    }
+
+    fn handle_distance_update(&mut self) {
+        // TODO: deal with the distance
     }
 }

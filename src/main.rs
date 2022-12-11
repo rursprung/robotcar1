@@ -181,7 +181,7 @@ mod app {
 
     // see here for why this is EXTI9_5: https://github.com/stm32-rs/stm32f4xx-hal/blob/6d0c29233a4cd1f780b2fef3e47ef091ead6cf4a/src/gpio/exti.rs#L8-L23
     /// Triggers every time the user button is pressed.
-    #[task(binds=  EXTI9_5, local = [button])]
+    #[task(binds = EXTI9_5, local = [button])]
     fn button_click(ctx: button_click::Context) {
         ctx.local.button.clear_interrupt_pending_bit();
 
@@ -196,7 +196,7 @@ mod app {
             .tof_data_interrupt_pin
             .clear_interrupt_pending_bit();
         ctx.shared.car.lock(|car| {
-            car.handle_distance_sensor_interrupt();
+            car.handle_distance_sensor_interrupt().ok(); // error already logged in the function
         });
     }
 
