@@ -1,4 +1,4 @@
-//#![deny(unsafe_code)]
+#![deny(unsafe_code)]
 #![deny(warnings)]
 #![no_main]
 #![no_std]
@@ -41,7 +41,7 @@ mod app {
         dma::{traits::StreamISR, Stream2},
         gpio::{Edge, Input, PA0, PA9},
         i2c::I2c,
-        pac::{DMA2, IWDG, TIM5, USART1},
+        pac::{DMA2, IWDG, TIM5},
         prelude::*,
         timer::MonoTimerUs,
         watchdog::IndependentWatchdog,
@@ -222,12 +222,5 @@ mod app {
                 remote_control.handle_bluetooth_message(car);
             });
         });
-
-        unsafe {
-            // taken 1:1 from serial::Rx::clear_idle_interrupt (don't have access to Rx here because it's in the transfer)
-            // see https://github.com/stm32-rs/stm32f4xx-hal/issues/550 which will hopefully provide a proper solution
-            let _ = (*USART1::ptr()).sr.read();
-            let _ = (*USART1::ptr()).dr.read();
-        }
     }
 }

@@ -47,6 +47,8 @@ impl RemoteControl {
 
         // switch out the buffers
         self.bt_module.rx_buffer = Some(filled_buffer);
+
+        self.bt_module.rx_transfer.clear_idle_interrupt();
     }
 
     fn handle_event(&mut self, event: ControllerEvent, car: &mut Car) {
