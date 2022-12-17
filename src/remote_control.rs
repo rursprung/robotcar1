@@ -9,15 +9,11 @@ use core::cmp::{max, min, Ordering};
 
 pub struct RemoteControl {
     bt_module: BluefruitLEUARTFriend,
-    current_speed: i8,
 }
 
 impl RemoteControl {
     pub fn new(bt_module: BluefruitLEUARTFriend) -> RemoteControl {
-        RemoteControl {
-            bt_module,
-            current_speed: 0,
-        }
+        RemoteControl { bt_module }
     }
 
     pub fn handle_bluetooth_message(&mut self, car: &mut Car) {
@@ -71,16 +67,15 @@ impl RemoteControl {
                 car.steer_center();
             }
             (Button::Up, ButtonState::Pressed) => {
-                self.current_speed = min(self.current_speed + 25, 100);
-                self.handle_speed_change(car);
+                let new_speed = min(car.current_speed() + 25, 100);
+                self.handle_speed_change(car, new_speed);
             }
             (Button::Down, ButtonState::Pressed) => {
-                self.current_speed = max(self.current_speed - 25, -100);
-                self.handle_speed_change(car);
+                let new_speed = max(car.current_speed() - 25, -100);
+                self.handle_speed_change(car, new_speed);
             }
             (Button::Button1, ButtonState::Pressed) => {
-                self.current_speed = 0;
-                self.handle_speed_change(car);
+                self.handle_speed_change(car, 0);
             }
             (Button::Up | Button::Down | Button::Button1, ButtonState::Released) => {
                 defmt::debug!("button released which doesn't need any action");
@@ -91,10 +86,11 @@ impl RemoteControl {
         }
     }
 
-    fn handle_speed_change(&mut self, car: &mut Car) {
-        match self.current_speed.cmp(&0) {
-            Ordering::Greater => car.drive_forward(self.current_speed as u8),
-            Ordering::Less => car.drive_backwards((-self.current_speed) as u8),
+    fn handle_speed_change(&mut self, car: &mut Car, new_speed: i8) {
+        // TODO: handle result
+        match new_speed.cmp(&0) {
+            Ordering::Greater => car.drive_forward(new_speed as u8).expect("can drive"),
+            Ordering::Less => car.drive_backwards((-new_speed) as u8).expect("can drive"),
             Ordering::Equal => car.halt(),
         }
     }

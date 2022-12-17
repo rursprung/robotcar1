@@ -426,6 +426,7 @@ dependencies = [
  "defmt",
  "defmt-rtt",
  "embedded-hal 0.2.7",
+ "fugit",
  "panic-probe",
  "stm32f4xx-hal",
  "tb6612fng",
@@ -589,7 +590,7 @@ dependencies = [
 [[package]]
 name = "tb6612fng"
 version = "0.1.0"
-source = "git+https://github.com/rursprung/tb6612fng-rs.git#d87f5749366324ed74554a5e3eba85b8bdb13934"
+source = "git+https://github.com/rursprung/tb6612fng-rs.git#dfb3c984eca86ddacb23b3289bb797b7c8bea089"
 dependencies = [
  "defmt",
  "embedded-hal 0.2.7",

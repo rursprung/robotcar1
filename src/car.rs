@@ -1,10 +1,33 @@
+use crate::car::CarState::{ForwardDistanceInvalid, Normal};
 use crate::servo::Servo;
 use crate::tof_sensor::DistanceSensor;
 use core::fmt::Debug;
 use core::marker::PhantomData;
+use defmt::Format;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::PwmPin;
-use tb6612fng::Motor;
+use fugit::ExtU32;
+use tb6612fng::{DriveError, Motor};
+
+#[derive(PartialEq, Eq, Debug, Format)]
+pub enum CarState {
+    /// Normal operation mode, car can be remotely controlled.
+    Normal,
+    /// Triggered if the distance is too small or not present at all. Can only be overridden once the distance is large enough again.
+    ForwardDistanceInvalid,
+}
+
+#[derive(PartialEq, Eq, Debug, Format)]
+pub enum Error {
+    NotAllowedToDrive,
+    DriveError(DriveError),
+}
+
+/// The maximum amount of time for which it's acceptable to not get a TOF signal. If this timeout is exceeded the car will do an emergency brake.
+const MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS: u32 = 100;
+
+/// The minimum front distance. If the distance is less than this the car will do an emergency brake.
+const MIN_FRONT_DISTANCE_IN_MM: u16 = 500;
 
 /// Represents the robot car.
 pub struct Car<ServoPwm, MAIN1, MAIN2, MAPWM, D, DE>
@@ -12,11 +35,16 @@ where
     ServoPwm: PwmPin,
     D: DistanceSensor<DE>,
 {
+    // peripherals
     steering: Servo<ServoPwm>,
     motor: Motor<MAIN1, MAIN2, MAPWM>,
     front_distance_sensor: D,
+
+    // data
+    current_state: CarState,
     /// The latest measurement of the front distance (if available)
     latest_front_distance_in_mm: Option<u16>,
+    last_front_distance_update: Option<fugit::TimerInstantU32<1_000_000>>,
     /// Needed to be able to specify the `DE` type parameter
     _distance_sensor_error: PhantomData<DE>,
 }
@@ -34,12 +62,14 @@ where
         steering: Servo<ServoPwm>,
         motor: Motor<MAIN1, MAIN2, MAPWM>,
         distance_sensor: D,
-    ) -> Car<ServoPwm, MAIN1, MAIN2, MAPWM, D, DE> {
+    ) -> Self {
         Car {
             steering,
             motor,
+            current_state: Normal,
             front_distance_sensor: distance_sensor,
             latest_front_distance_in_mm: None,
+            last_front_distance_update: None,
             _distance_sensor_error: PhantomData,
         }
     }
@@ -56,23 +86,34 @@ where
         self.steering.steer(180);
     }
 
-    pub fn drive_forward(&mut self, speed: u8) {
-        // TODO: handle result
-        self.motor.drive_forward(speed).expect("can drive forward");
+    pub fn drive_forward(&mut self, speed: u8) -> Result<(), Error> {
+        if self.current_state != Normal {
+            return Err(Error::NotAllowedToDrive);
+        }
+
+        self.motor.drive_forward(speed).map_err(Error::DriveError)
     }
 
-    pub fn drive_backwards(&mut self, speed: u8) {
-        // TODO: handle result
-        self.motor
-            .drive_backwards(speed)
-            .expect("can drive backwards");
+    pub fn drive_backwards(&mut self, speed: u8) -> Result<(), Error> {
+        // no need to validate `self.current_state` here as we're still allowed to drive back even if
+        // it's `ForwardDistanceInvalid` (we don't have a back sensor, so we presume that driving back is safe)
+        self.motor.drive_backwards(speed).map_err(Error::DriveError)
+    }
+
+    /// Return the current speed of the motor (in percentage). Note that driving forward returns a positive number
+    /// while driving backwards returns a negative number and both [`DriveCommand::Brake`] and [`DriveCommand::Stop`] return 0.
+    pub fn current_speed(&mut self) -> i8 {
+        self.motor.current_speed()
     }
 
     pub fn halt(&mut self) {
         self.motor.brake();
     }
 
-    pub fn handle_distance_sensor_interrupt(&mut self) -> Result<(), DE> {
+    pub fn handle_distance_sensor_interrupt(
+        &mut self,
+        now: fugit::TimerInstantU32<1_000_000>,
+    ) -> Result<(), DE> {
         if let Err(e) = self.front_distance_sensor.clear_interrupt() {
             self.latest_front_distance_in_mm = None;
             return Err(e);
@@ -81,6 +122,7 @@ where
             Ok(distance) => {
                 defmt::debug!("Received range: {}mm", distance);
                 self.latest_front_distance_in_mm = Some(distance);
+                self.last_front_distance_update = Some(now);
                 Ok(())
             }
             Err(e) => {
@@ -93,12 +135,35 @@ where
             }
         };
 
-        self.handle_distance_update();
+        self.validate_distance(now);
 
         result
     }
 
-    fn handle_distance_update(&mut self) {
-        // TODO: deal with the distance
+    pub fn validate_distance(&mut self, now: fugit::TimerInstantU32<1_000_000>) {
+        if let Some(last_front_distance_update) = self.last_front_distance_update {
+            if last_front_distance_update + MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS.millis() < now {
+                defmt::error!("took too long to get a new TOF update => enabling emergency brake!");
+                self.halt();
+                self.current_state = ForwardDistanceInvalid;
+            } else {
+                // handle the case if we have data. note that if we don't have data we don't do anything
+                // and just keep the previous state until we either time out (see above) or have a distance available again.
+                if let Some(distance_in_mm) = self.latest_front_distance_in_mm {
+                    if distance_in_mm < MIN_FRONT_DISTANCE_IN_MM {
+                        defmt::warn!("collision warning, the front distance of {}mm is less than the safe minimum of {}mm - stopping the car!", distance_in_mm, MIN_FRONT_DISTANCE_IN_MM);
+                        self.halt();
+                        self.current_state = ForwardDistanceInvalid;
+                    } else {
+                        // enough distance => allow driving forward
+                        self.current_state = Normal;
+                    }
+                }
+            }
+        } else {
+            // no distance data available => prevent driving forward
+            self.halt();
+            self.current_state = ForwardDistanceInvalid;
+        }
     }
 }

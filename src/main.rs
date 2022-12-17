@@ -13,26 +13,18 @@ use panic_probe as _;
 
 use defmt_rtt as _;
 
-use stm32f4xx_hal::{
-    gpio::{Output, PB4, PB5, PB8, PB9},
-    i2c::{self, I2c1},
-    pac::{TIM2, TIM3},
-    timer::PwmChannel,
-};
-use tof_sensor::TOFSensor;
-
-type I2C1 = I2c1<(PB8, PB9)>;
-pub type CarT = car::Car<
-    PwmChannel<TIM3, 0>,
-    PB5<Output>,
-    PB4<Output>,
-    PwmChannel<TIM2, 2>,
-    TOFSensor<I2C1, i2c::Error>,
-    vl53l1x_uld::Error<i2c::Error>,
->;
+pub use app::CarT;
 
 #[rtic::app(device = stm32f4xx_hal::pac, dispatchers = [EXTI1])]
 mod app {
+
+    use stm32f4xx_hal::{
+        gpio::{Output, PB4, PB5, PB8, PB9},
+        i2c::{self, I2c1},
+        pac::{TIM2, TIM3},
+        timer::PwmChannel,
+    };
+    //use tof_sensor::TOFSensor;
     use crate::{
         bt_module::BluefruitLEUARTFriend, car::Car, remote_control::RemoteControl, servo::Servo,
         tof_sensor::TOFSensor,
@@ -50,6 +42,16 @@ mod app {
 
     #[monotonic(binds = TIM5, default = true)]
     type MicrosecMono = MonoTimerUs<TIM5>;
+
+    type I2C1 = I2c1<(PB8, PB9)>;
+    pub type CarT = Car<
+        PwmChannel<TIM3, 0>,
+        PB5<Output>,
+        PB4<Output>,
+        PwmChannel<TIM2, 2>,
+        TOFSensor<I2C1, i2c::Error>,
+        vl53l1x_uld::Error<i2c::Error>,
+    >;
 
     #[shared]
     struct Shared {
@@ -198,7 +200,7 @@ mod app {
             .tof_data_interrupt_pin
             .clear_interrupt_pending_bit();
         ctx.shared.car.lock(|car| {
-            car.handle_distance_sensor_interrupt().ok(); // error already logged in the function
+            car.handle_distance_sensor_interrupt(monotonics::now()).ok(); // error already logged in the function
         });
     }
 
