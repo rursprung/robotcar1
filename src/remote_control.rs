@@ -87,11 +87,23 @@ impl RemoteControl {
     }
 
     fn handle_speed_change(&mut self, car: &mut Car, new_speed: i8) {
-        // TODO: handle result
+        // ignore failures as we can't report back to the actual remote control. the user will see
+        // whether his actions had an effect or not and can try again if he thinks that the action
+        // should work in a next step.
         match new_speed.cmp(&0) {
-            Ordering::Greater => car.drive_forward(new_speed as u8).expect("can drive"),
-            Ordering::Less => car.drive_backwards((-new_speed) as u8).expect("can drive"),
-            Ordering::Equal => car.halt(),
-        }
+            Ordering::Greater => {
+                if let Err(err) = car.drive_forward(new_speed as u8) {
+                    defmt::error!("couldn't drive forward! {}", err);
+                }
+            }
+            Ordering::Less => {
+                if let Err(err) = car.drive_backwards((-new_speed) as u8) {
+                    defmt::error!("couldn't drive backwards! {}", err);
+                }
+            }
+            Ordering::Equal => {
+                car.halt();
+            }
+        };
     }
 }
