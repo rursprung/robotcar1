@@ -1,9 +1,16 @@
+use crate::app::Display;
 use crate::car::CarState::{ForwardDistanceInvalid, Normal};
 use crate::servo::Servo;
 use crate::tof_sensor::DistanceSensor;
 use core::fmt::Debug;
 use core::marker::PhantomData;
 use defmt::Format;
+use embedded_graphics::mono_font::ascii::FONT_6X12;
+use embedded_graphics::mono_font::MonoTextStyleBuilder;
+use embedded_graphics::pixelcolor::BinaryColor;
+use embedded_graphics::prelude::Point;
+use embedded_graphics::text::Text;
+use embedded_graphics::Drawable;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::PwmPin;
 use fugit::ExtU32;
@@ -30,15 +37,16 @@ const MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS: u32 = 100;
 const MIN_FRONT_DISTANCE_IN_MM: u16 = 500;
 
 /// Represents the robot car.
-pub struct Car<ServoPwm, MAIN1, MAIN2, MAPWM, D, DE>
+pub struct Car<ServoPwm, MAIN1, MAIN2, MAPWM, DS, DE>
 where
     ServoPwm: PwmPin,
-    D: DistanceSensor<DE>,
+    DS: DistanceSensor<DE>,
 {
     // peripherals
     steering: Servo<ServoPwm>,
     motor: Motor<MAIN1, MAIN2, MAPWM>,
-    front_distance_sensor: D,
+    front_distance_sensor: DS,
+    display: Option<Display>,
 
     // data
     current_state: CarState,
@@ -49,23 +57,25 @@ where
     _distance_sensor_error: PhantomData<DE>,
 }
 
-impl<ServoPwm, MAIN1, MAIN2, MAPWM, D, DE> Car<ServoPwm, MAIN1, MAIN2, MAPWM, D, DE>
+impl<ServoPwm, MAIN1, MAIN2, MAPWM, DS, DE> Car<ServoPwm, MAIN1, MAIN2, MAPWM, DS, DE>
 where
     ServoPwm: PwmPin<Duty = u16>,
     MAIN1: OutputPin,
     MAIN2: OutputPin,
     MAPWM: PwmPin<Duty = u16>,
-    D: DistanceSensor<DE>,
+    DS: DistanceSensor<DE>,
     DE: Debug,
 {
     pub fn new(
         steering: Servo<ServoPwm>,
         motor: Motor<MAIN1, MAIN2, MAPWM>,
-        distance_sensor: D,
+        distance_sensor: DS,
+        display: Option<Display>,
     ) -> Self {
         Car {
             steering,
             motor,
+            display,
             current_state: Normal,
             front_distance_sensor: distance_sensor,
             latest_front_distance_in_mm: None,
@@ -164,6 +174,24 @@ where
             // no distance data available => prevent driving forward
             self.halt();
             self.current_state = ForwardDistanceInvalid;
+        }
+
+        self.update_display();
+    }
+
+    fn update_display(&mut self) {
+        if let Some(display) = self.display.as_mut() {
+            // TODO: show useful information here (front distance, speed)
+
+            display.clear();
+            let text_style = MonoTextStyleBuilder::new()
+                .font(&FONT_6X12)
+                .text_color(BinaryColor::On)
+                .build();
+            Text::new("Hello World!", Point::new(15, 15), text_style)
+                .draw(display)
+                .unwrap();
+            display.flush().unwrap();
         }
     }
 }

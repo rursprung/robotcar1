@@ -18,17 +18,12 @@ pub use app::CarT;
 #[rtic::app(device = stm32f4xx_hal::pac, dispatchers = [EXTI1])]
 mod app {
 
-    use stm32f4xx_hal::{
-        gpio::{Output, PB4, PB5, PB8, PB9},
-        i2c::{self, I2c1},
-        pac::{TIM2, TIM3},
-        timer::PwmChannel,
-    };
-    //use tof_sensor::TOFSensor;
     use crate::{
         bt_module::BluefruitLEUARTFriend, car::Car, remote_control::RemoteControl, servo::Servo,
         tof_sensor::TOFSensor,
     };
+    use display_interface::DisplayError;
+    use ssd1306::{mode::BufferedGraphicsMode, prelude::*, I2CDisplayInterface, Ssd1306};
     use stm32f4xx_hal::{
         dma::{traits::StreamISR, Stream2},
         gpio::{Edge, Input, PA0, PA9},
@@ -38,18 +33,27 @@ mod app {
         timer::MonoTimerUs,
         watchdog::IndependentWatchdog,
     };
+    use stm32f4xx_hal::{
+        gpio::{Output, PB4, PB5, PB8, PB9},
+        i2c::{self, I2c1},
+        pac::{TIM2, TIM3},
+        timer::PwmChannel,
+    };
     use tb6612fng::Motor;
 
     #[monotonic(binds = TIM5, default = true)]
     type MicrosecMono = MonoTimerUs<TIM5>;
 
     type I2C1 = I2c1<(PB8, PB9)>;
+    type I2cProxy = shared_bus::I2cProxy<'static, shared_bus::AtomicCheckMutex<I2C1>>;
+    pub type Display =
+        Ssd1306<I2CInterface<I2cProxy>, DisplaySize128x64, BufferedGraphicsMode<DisplaySize128x64>>;
     pub type CarT = Car<
         PwmChannel<TIM3, 0>,
         PB5<Output>,
         PB4<Output>,
         PwmChannel<TIM2, 2>,
-        TOFSensor<I2C1, i2c::Error>,
+        TOFSensor<I2cProxy, i2c::Error>,
         vl53l1x_uld::Error<i2c::Error>,
     >;
 
@@ -98,6 +102,7 @@ mod app {
 
         // set up I2C
         let i2c = I2c::new(ctx.device.I2C1, (gpiob.pb8, gpiob.pb9), 400.kHz(), &clocks);
+        let i2c = shared_bus::new_atomic_check!(I2C1 = i2c).unwrap();
 
         // set up the interrupt for the TOF
         let mut tof_data_interrupt_pin = gpioa.pa0.into_pull_down_input();
@@ -105,7 +110,9 @@ mod app {
         tof_data_interrupt_pin.enable_interrupt(&mut ctx.device.EXTI);
         tof_data_interrupt_pin.trigger_on_edge(&mut ctx.device.EXTI, Edge::Falling);
 
-        let tof_sensor = TOFSensor::new(i2c).expect("could initialise TOF sensor");
+        let tof_sensor = TOFSensor::new(i2c.acquire_i2c()).expect("could initialise TOF sensor");
+
+        let display = setup_display(i2c.acquire_i2c()).map(Some).unwrap_or(None);
 
         // set up USART (for the bluetooth module)
         let bt_module = BluefruitLEUARTFriend::new(
@@ -147,7 +154,7 @@ mod app {
             .split();
         let motor1 = Motor::new(motor_a_in1, motor_a_in2, motor_a_pwm);
 
-        let car = Car::new(servo1, motor1, tof_sensor);
+        let car = Car::new(servo1, motor1, tof_sensor, display);
 
         defmt::info!("init done");
 
@@ -176,6 +183,15 @@ mod app {
         feed_watchdog::spawn().ok();
         defmt::trace!("watchdog set up");
         watchdog
+    }
+
+    fn setup_display(i2c: I2cProxy) -> Result<Display, DisplayError> {
+        let interface = I2CDisplayInterface::new_alternate_address(i2c); // our display runs on 0x3D, not 0x3C
+        let mut display = Ssd1306::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)
+            .into_buffered_graphics_mode();
+        display.init()?;
+        display.flush()?;
+        Ok(display)
     }
 
     /// Feed the watchdog periodically to avoid hardware reset.
