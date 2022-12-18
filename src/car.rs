@@ -181,16 +181,21 @@ where
 
     fn update_display(&mut self) {
         if let Some(display) = self.display.as_mut() {
-            // TODO: show useful information here (front distance, speed)
-
             display.clear();
             let text_style = MonoTextStyleBuilder::new()
                 .font(&FONT_6X12)
                 .text_color(BinaryColor::On)
                 .build();
-            Text::new("Hello World!", Point::new(15, 15), text_style)
-                .draw(display)
-                .unwrap();
+            if let Some(front_distance_in_mm) = self.latest_front_distance_in_mm {
+                let mut buffer = itoa::Buffer::new();
+                let front_distance_in_mm = buffer.format(front_distance_in_mm);
+                Text::new("Front distance: ", Point::new(15, 15), text_style)
+                    .draw(display)
+                    .unwrap();
+                Text::new(front_distance_in_mm, Point::new(15, 30), text_style)
+                    .draw(display)
+                    .unwrap();
+            }
             display.flush().unwrap();
         }
     }

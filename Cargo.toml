@@ -32,6 +32,8 @@ embedded-graphics = "0.7"
 display-interface = "0.4"
 ssd1306 = "0.7"
 
+itoa = "1.0"
+
 [profile.release]
 codegen-units = 1
 lto = true
