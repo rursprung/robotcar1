@@ -22,7 +22,7 @@ defmt-rtt = "0.4"
 
 fugit = { version = "0.3", features = ["defmt"] }
 
-adafruit-bluefruit-protocol = { git = "https://github.com/rursprung/adafruit-bluefruit-protocol-rs.git", default-features = false, features = ["button_event", "defmt"] }
+adafruit-bluefruit-protocol = { version = "0.1", default-features = false, features = ["button_event", "defmt"] }
 tb6612fng = { git = "https://github.com/rursprung/tb6612fng-rs.git", features = ["defmt"] }
 vl53l1x-uld = "2.0.0"
 
