@@ -87,7 +87,7 @@ mod app {
         // This code will afterwards be moved / re-written when the actual functionality will be implemented.
 
         // set up the status LEDs
-        let _led_status_ok = gpioa.pa7.into_push_pull_output();
+        let mut led_status_ok = gpioa.pa7.into_push_pull_output();
         let _led_status_autonomous = gpioa.pa8.into_push_pull_output();
 
         // set up the user button
@@ -150,6 +150,9 @@ mod app {
         let car = Car::new(servo1, motor1, tof_sensor);
 
         defmt::info!("init done");
+
+        // init is done, show this with the LED lighting up
+        led_status_ok.set_high();
 
         (
             Shared {
