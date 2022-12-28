@@ -80,8 +80,6 @@ mod app {
         let clocks = rcc.cfgr.sysclk(84.MHz()).freeze();
         let mono = ctx.device.TIM5.monotonic_us(&clocks);
 
-        let watchdog = setup_watchdog(ctx.device.IWDG);
-
         let gpioa = ctx.device.GPIOA.split();
         let gpiob = ctx.device.GPIOB.split();
         let gpioc = ctx.device.GPIOC.split();
@@ -157,6 +155,8 @@ mod app {
         let motor1 = Motor::new(motor_a_in1, motor_a_in2, motor_a_pwm);
 
         let car = Car::new(servo1, motor1, tof_sensor, display);
+
+        let watchdog = setup_watchdog(ctx.device.IWDG);
 
         defmt::info!("init done");
 
