@@ -147,6 +147,8 @@ where
 
         self.validate_distance(now);
 
+        self.update_display();
+
         result
     }
 
@@ -175,8 +177,6 @@ where
             self.halt_if_driving_forward();
             self.current_state = ForwardDistanceInvalid;
         }
-
-        self.update_display();
     }
 
     /// Halt in case the car is currently driving forward, otherwise do nothing.
@@ -190,11 +190,11 @@ where
     fn update_display(&mut self) {
         if let Some(display) = self.display.as_mut() {
             display.clear();
-            let text_style = MonoTextStyleBuilder::new()
-                .font(&FONT_6X12)
-                .text_color(BinaryColor::On)
-                .build();
             if let Some(front_distance_in_mm) = self.latest_front_distance_in_mm {
+                let text_style = MonoTextStyleBuilder::new()
+                    .font(&FONT_6X12)
+                    .text_color(BinaryColor::On)
+                    .build();
                 let mut buffer = itoa::Buffer::new();
                 let front_distance_in_mm = buffer.format(front_distance_in_mm);
                 Text::new("Front distance: ", Point::new(15, 15), text_style)
