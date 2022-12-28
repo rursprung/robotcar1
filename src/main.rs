@@ -19,7 +19,10 @@ pub use app::CarT;
 mod app {
 
     use crate::{
-        bt_module::BluefruitLEUARTFriend, car::{Car, MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS}, remote_control::RemoteControl, servo::Servo,
+        bt_module::BluefruitLEUARTFriend,
+        car::{Car, MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS},
+        remote_control::RemoteControl,
+        servo::Servo,
         tof_sensor::TOFSensor,
     };
     use display_interface::DisplayError;
@@ -109,7 +112,7 @@ mod app {
         tof_data_interrupt_pin.trigger_on_edge(&mut ctx.device.EXTI, Edge::Falling);
 
         let tof_sensor = TOFSensor::new(i2c.acquire_i2c()).expect("could initialise TOF sensor");
-        validate_distance::spawn_after((MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS+1).millis()).ok();
+        validate_distance::spawn_after((MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS + 1).millis()).ok();
 
         let display = setup_display(i2c.acquire_i2c()).map(Some).unwrap_or(None);
 
@@ -136,7 +139,12 @@ mod app {
         // TODO: this is not 0 - 180°, change the code a bit to represent this
         let steering_centre_pwm = 5000;
         let max_steering_side = 1200;
-        let servo1 = Servo::new(servo1_pwm, steering_centre_pwm - max_steering_side, steering_centre_pwm + max_steering_side, 90);
+        let servo1 = Servo::new(
+            servo1_pwm,
+            steering_centre_pwm - max_steering_side,
+            steering_centre_pwm + max_steering_side,
+            90,
+        );
 
         // set up motor A & B
         let motor_a_in1 = gpiob.pb5.into_push_pull_output();
@@ -231,7 +239,7 @@ mod app {
         ctx.shared.car.lock(|car| {
             car.validate_distance(monotonics::now());
         });
-        validate_distance::spawn_after((MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS+1).millis()).ok();
+        validate_distance::spawn_after((MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS + 1).millis()).ok();
     }
 
     #[task(binds = DMA2_STREAM2, shared = [remote_control, car])]
