@@ -56,6 +56,7 @@ impl RemoteControl {
     }
 
     fn handle_button_event(&mut self, event: ButtonEvent, car: &mut Car) {
+        defmt::debug!("handling {}", event);
         match (event.button(), event.state()) {
             (Button::Left, ButtonState::Pressed) => {
                 car.steer_left();
@@ -78,7 +79,7 @@ impl RemoteControl {
                 self.handle_speed_change(car, 0);
             }
             (Button::Up | Button::Down | Button::Button1, ButtonState::Released) => {
-                defmt::debug!("button released which doesn't need any action");
+                defmt::trace!("button released which doesn't need any action");
             }
             evt => {
                 defmt::warn!("unimplemented event {}", evt);
@@ -87,6 +88,7 @@ impl RemoteControl {
     }
 
     fn handle_speed_change(&mut self, car: &mut Car, new_speed: i8) {
+        defmt::debug!("new speed set by remote: {}", new_speed);
         // ignore failures as we can't report back to the actual remote control. the user will see
         // whether his actions had an effect or not and can try again if he thinks that the action
         // should work in a next step.
