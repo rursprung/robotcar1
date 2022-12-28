@@ -154,7 +154,7 @@ where
         if let Some(last_front_distance_update) = self.last_front_distance_update {
             if last_front_distance_update + MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS.millis() < now {
                 defmt::error!("took too long to get a new TOF update => enabling emergency brake!");
-                self.halt();
+                self.halt_if_driving_forward();
                 self.current_state = ForwardDistanceInvalid;
             } else {
                 // handle the case if we have data. note that if we don't have data we don't do anything
@@ -162,7 +162,7 @@ where
                 if let Some(distance_in_mm) = self.latest_front_distance_in_mm {
                     if distance_in_mm < MIN_FRONT_DISTANCE_IN_MM {
                         defmt::warn!("collision warning, the front distance of {}mm is less than the safe minimum of {}mm - stopping the car!", distance_in_mm, MIN_FRONT_DISTANCE_IN_MM);
-                        self.halt();
+                        self.halt_if_driving_forward();
                         self.current_state = ForwardDistanceInvalid;
                     } else {
                         // enough distance => allow driving forward
@@ -171,12 +171,20 @@ where
                 }
             }
         } else {
-            // no distance data available => prevent driving forward
-            self.halt();
+            defmt::error!("no distance data available => prevent driving forward");
+            self.halt_if_driving_forward();
             self.current_state = ForwardDistanceInvalid;
         }
 
         self.update_display();
+    }
+
+    /// Halt in case the car is currently driving forward, otherwise do nothing.
+    /// This is used in the collision avoidance to ensure that it's still possible to drive backwards.
+    fn halt_if_driving_forward(&mut self) {
+        if self.current_speed() > 0 {
+            self.halt();
+        }
     }
 
     fn update_display(&mut self) {
