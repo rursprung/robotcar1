@@ -19,7 +19,7 @@ pub use app::CarT;
 mod app {
 
     use crate::{
-        bt_module::BluefruitLEUARTFriend, car::Car, remote_control::RemoteControl, servo::Servo,
+        bt_module::BluefruitLEUARTFriend, car::{Car, MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS}, remote_control::RemoteControl, servo::Servo,
         tof_sensor::TOFSensor,
     };
     use display_interface::DisplayError;
@@ -111,6 +111,7 @@ mod app {
         tof_data_interrupt_pin.trigger_on_edge(&mut ctx.device.EXTI, Edge::Falling);
 
         let tof_sensor = TOFSensor::new(i2c.acquire_i2c()).expect("could initialise TOF sensor");
+        validate_distance::spawn_after((MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS+1).millis()).ok();
 
         let display = setup_display(i2c.acquire_i2c()).map(Some).unwrap_or(None);
 
@@ -222,6 +223,15 @@ mod app {
         ctx.shared.car.lock(|car| {
             car.handle_distance_sensor_interrupt(monotonics::now()).ok(); // error already logged in the function
         });
+    }
+
+    /// Ensure that we also react in case we don't get a new sensor value from the TOF
+    #[task(priority = 1, shared = [car])]
+    fn validate_distance(mut ctx: validate_distance::Context) {
+        ctx.shared.car.lock(|car| {
+            car.validate_distance(monotonics::now());
+        });
+        validate_distance::spawn_after((MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS+1).millis()).ok();
     }
 
     #[task(binds = DMA2_STREAM2, shared = [remote_control, car])]

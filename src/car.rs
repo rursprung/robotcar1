@@ -31,7 +31,7 @@ pub enum Error {
 }
 
 /// The maximum amount of time for which it's acceptable to not get a TOF signal. If this timeout is exceeded the car will do an emergency brake.
-const MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS: u32 = 100;
+pub const MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS: u32 = 200;
 
 /// The minimum front distance. If the distance is less than this the car will do an emergency brake.
 const MIN_FRONT_DISTANCE_IN_MM: u16 = 500;
