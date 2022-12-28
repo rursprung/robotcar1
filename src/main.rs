@@ -135,8 +135,9 @@ mod app {
             )
             .split();
         // TODO: this is not 0 - 180°, change the code a bit to represent this
-        // TODO: try to get a bit more out of it to get the maximum & document that this was found using trial & error
-        let servo1 = Servo::new(servo1_pwm, 3500, 6000, 90);
+        let steering_centre_pwm = 5000;
+        let max_steering_side = 1200;
+        let servo1 = Servo::new(servo1_pwm, steering_centre_pwm - max_steering_side, steering_centre_pwm + max_steering_side, 90);
 
         // set up motor A & B
         let motor_a_in1 = gpiob.pb5.into_push_pull_output();
