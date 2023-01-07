@@ -25,7 +25,7 @@ fugit = { version = "0.3", features = ["defmt"] }
 shared-bus = { version = "0.2", features = ["cortex-m"] }
 
 adafruit-bluefruit-protocol = { version = "0.1", default-features = false, features = ["button_event", "defmt"] }
-tb6612fng = { git = "https://github.com/rursprung/tb6612fng-rs.git", features = ["defmt"] }
+tb6612fng = { version = "0.1.0", features = ["defmt"] }
 vl53l1x-uld = "2.0.0"
 
 embedded-graphics = "0.7"

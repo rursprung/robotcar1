@@ -713,7 +713,8 @@ dependencies = [
 [[package]]
 name = "tb6612fng"
 version = "0.1.0"
-source = "git+https://github.com/rursprung/tb6612fng-rs.git#db9b05dc9f5ebe33528f756511b8ab53de863554"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c6e6d1c8688873092f0d948bdfd73ae1bf05b7cfd196a6b3416fbe9b5e9dce5b"
 dependencies = [
  "defmt",
  "embedded-hal 0.2.7",
