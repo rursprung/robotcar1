@@ -4,9 +4,9 @@ version = 3
 
 [[package]]
 name = "adafruit-bluefruit-protocol"
-version = "0.1.0"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7374445910588d54155a9db6550cccb5947ca5f23d031d6cb83f4b1cf85f8af3"
+checksum = "5a656149a4a0bb82a27f1df097b96c2bda7dfa0431afe9922b60e11252dbfd88"
 dependencies = [
  "defmt",
  "heapless",
