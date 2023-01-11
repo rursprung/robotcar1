@@ -35,8 +35,8 @@ where
         if angle > 180 {
             panic!("angle > 180"); // TODO: change to result!
         }
-        let duty = (((self.max_duty - self.min_duty) as f32 * (angle as f32 / 180.0)) as PWM::Duty
-            + self.min_duty) as u16;
+        let duty = ((self.max_duty - self.min_duty) as f32 * (angle as f32 / 180.0)) as PWM::Duty
+            + self.min_duty;
         defmt::debug!(
             "setting steering angle to {}, resulting in duty {}",
             angle,
