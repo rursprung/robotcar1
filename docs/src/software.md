@@ -33,3 +33,7 @@ The following drivers have been used for the peripherals:
 | IMU ([Adafruit MPU6050](https://learn.adafruit.com/mpu6050-6-dof-accelerometer-and-gyro))                               | [mpu6050](https://crates.io/crates/mpu6050)         | Currently unused, thus not included in the code.                                                                                                                                                               |
 | BLE ([Adafruit Bluefruit LE UART Friend](https://learn.adafruit.com/introducing-the-adafruit-bluefruit-le-uart-friend)) | n/a                                                 | Uses basic UART in our use-case, thus no dedicated driver needed. Protocol support implemented as part of this project in [adafruit-bluefruit-protocol](https://crates.io/crates/adafruit-bluefruit-protocol). |
 | Motor Driver ([SparkFun Motor Driver - Dual TB6612FNG](https://www.sparkfun.com/products/14450))                        | [tb6612fng](https://crates.io/crates/tb6612fng)     | Implemented as part of this project.                                                                                                                                                                           |
+
+## Compiling & Running It
+Please refer to the README located in the repository root for the necessary steps to compile & run the program on the
+target device.
