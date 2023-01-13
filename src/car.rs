@@ -111,7 +111,7 @@ where
     }
 
     /// Return the current speed of the motor (in percentage). Note that driving forward returns a positive number
-    /// while driving backwards returns a negative number and both [`DriveCommand::Brake`] and [`DriveCommand::Stop`] return 0.
+    /// while driving backwards returns a negative number and a stopped car returns 0.
     pub fn current_speed(&mut self) -> i8 {
         self.motor.current_speed()
     }
