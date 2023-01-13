@@ -3,6 +3,9 @@ For a general overview of Rust please refer to the awesome [Rust learning resour
 and for more details on embedded development with Rust please refer to the awesome [Rust Embedded learning resources](https://www.rust-lang.org/what/embedded).
 The same also goes for further information on [RTIC](https://rtic.rs/).
 
+There's also a [community blog post](https://www.anyleaf.org/blog/rust-embedded-ecosystem-and-tools) which contains similar
+information to what's been listed here.
+
 ## Crates
 Rust libraries are called crates and are often published on [crates.io](https://crates.io/) (but can also be pulled in from
 other sources, e.g. local paths or git repositories).
@@ -32,6 +35,28 @@ which is always present.
 
 Optionally, an allocator can be added (if available / implemented for the used target) and in that case [`alloc`](https://doc.rust-lang.org/stable/core/alloc/)
 can be used as well. This will provide all OS-independent but dynamically allocated APIs (e.g. string handling).
+
+### Different Hardware Abstractions
+By convention there are different "levels" of abstraction when interacting with hardware in Rust. From the bottom up (higher is preferred):
+1. No abstraction, know the memory location of registers and directly manipulate them (requires `unsafe` Rust, bound to specific hardware)
+1. Peripheral Access Crate (PAC): low-level APIs to interact with the registers of a specific device.
+   Usually generated from SVD files using [`svd2rust`](https://github.com/rust-embedded/svd2rust/). Still requires some `unsafe` code and offers
+   nearly no hardware abstraction, i.e. you still need to interact with the registers, but don't need to know the memory addresses.
+1. Hardware Abstraction Layer (HAL): higher-level APIs to interact with a specific device (or often device family).
+   Usually no `unsafe` Rust is needed. Offers APIs like "set this output port to high".
+1. Board Support Package (BSP): high-level APIs for specific boards, offering opinionated APIs for that board (e.g. directly
+   turning specific pins into inputs or outputs because they are known to be connected to certain peripheral mounted on the board
+   and offering them under the appropriate name).
+
+See [the embedded Rust book](https://docs.rust-embedded.org/book/start/registers.html) for more details.
+
+### Generic HAL: `embedded-hal`
+The Rust embedded community offers a generic set of APIs for HALs: [`embedded-hal`](https://github.com/rust-embedded/embedded-hal).
+Similar abstractions exist for other embedded features ([`embedded-nal`](https://github.com/rust-embedded-community/embedded-nal)
+for networking, [`embedded-can`](https://github.com/rust-embedded/embedded-hal/tree/master/embedded-can) for CAN, etc.).
+(Nearly?) all HALs implement these APIs when appropriate. This allows writing device-independent functionality,
+e.g. drivers for peripherals, which can then run on any device.
+Thus, often only the initialisation code has to be device-specific, while the business logic can use the traits and is thus portable. 
 
 ### Knurling-rs: Rust Embedded Improvement Project
 [Knurling-rs](https://knurling.ferrous-systems.com/) is a project by the Rust community (mainly driven by

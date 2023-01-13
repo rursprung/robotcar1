@@ -3,6 +3,7 @@
 [Preface](./preface.md)
 
 - [Overview](./overview.md)
+- [User Guide](./user-guide.md)
 - [Hardware](./hardware.md)
 - [Electronics](./electronics.md)
 - [Software](./software.md)

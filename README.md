@@ -1,14 +1,14 @@
 # Robot Car
-A project as part of my [BSc in Mobile Robotics at FHGR](https://fhgr.ch/mr) in the Mobile Roboticsproject 1 module.
+This is my first mobile robotics project (a 3rd semester module) of the [BSc in Mobile Robotics at FHGR](https://fhgr.ch/mr).
 
 ## Prerequisites
 1. [Install Rust](https://www.rust-lang.org/tools/install)
-1. Optional: ensure that the rust toolchain is up-to-date: `rustup update`
-1. Install `probe-run`: `cargo install probe-run`
-1. Install `flip-link`: `cargo install flip-link`
-1. Install the cross-compile target: `rustup target add thumbv7em-none-eabihf`
-1. Optional: install the LLVM tools: `rustup component add llvm-tools-preview`
-1. Install the STLink drivers
+2. Optional: ensure that the rust toolchain is up-to-date: `rustup update`
+3. Install `probe-run`: `cargo install probe-run`
+4. Install `flip-link`: `cargo install flip-link`
+5. Install the cross-compile target: `rustup target add thumbv7em-none-eabihf`
+6. Optional: install the LLVM tools: `rustup component add llvm-tools-preview`
+7. Install the STLink drivers
 
 ## Build & Download to Board
 1. Connect the board via USB

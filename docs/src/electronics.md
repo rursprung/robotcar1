@@ -43,4 +43,3 @@ The board provides VIN to the motor(s) and the microcontroller board (which has 
 5V to the servo(s) and 3.3V to the other components.
 
 The layout of the buck converter and LTO has been taken from the respective datasheet (which provide best practices for the layouts).
-
