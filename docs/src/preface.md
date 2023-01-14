@@ -4,6 +4,8 @@ This is the documentation for the toy RC robot car developed by me as part of th
 
 Note that this was implemented in a (somewhat) time-boxed manner, accordingly not everything is implemented or working as it should.
 
+![The robotcar](img/robotcar-photo.jpg)
+
 ## Code Artefacts Created
 As part of this project several code artefacts have been created:
 * the [robotcar1](https://github.com/rursprung/robotcar1/) application:
