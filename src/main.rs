@@ -25,8 +25,11 @@ mod app {
         servo::Servo,
         tof_sensor::TOFSensor,
     };
+    #[cfg(feature = "use-display")]
     use display_interface::DisplayError;
-    use ssd1306::{mode::BufferedGraphicsMode, prelude::*, I2CDisplayInterface, Ssd1306};
+    #[cfg(feature = "use-display")]
+    use ssd1306::I2CDisplayInterface;
+    use ssd1306::{mode::BufferedGraphicsMode, prelude::*, Ssd1306};
     use stm32f4xx_hal::{
         dma::{traits::StreamISR, Stream2},
         gpio::{Edge, Input, PA0, PA9},
@@ -103,18 +106,42 @@ mod app {
 
         // set up I2C
         let i2c = I2c::new(ctx.device.I2C1, (gpiob.pb8, gpiob.pb9), 400.kHz(), &clocks);
+        #[cfg_attr(not(feature = "use-tof"), allow(unused))]
         let i2c = shared_bus::new_atomic_check!(I2C1 = i2c).unwrap();
 
-        // set up the interrupt for the TOF
+        // the pin is always needed (unless we want to change the code even more to make this optional as well)
+        #[cfg_attr(not(feature = "use-tof"), allow(unused_mut))]
         let mut tof_data_interrupt_pin = gpioa.pa0.into_pull_down_input();
-        tof_data_interrupt_pin.make_interrupt_source(&mut syscfg);
-        tof_data_interrupt_pin.enable_interrupt(&mut ctx.device.EXTI);
-        tof_data_interrupt_pin.trigger_on_edge(&mut ctx.device.EXTI, Edge::Falling);
+        let tof_sensor;
+        #[cfg(feature = "use-tof")]
+        {
+            // set up the interrupt for the TOF
+            tof_data_interrupt_pin.make_interrupt_source(&mut syscfg);
+            tof_data_interrupt_pin.enable_interrupt(&mut ctx.device.EXTI);
+            tof_data_interrupt_pin.trigger_on_edge(&mut ctx.device.EXTI, Edge::Falling);
 
-        let tof_sensor = TOFSensor::new(i2c.acquire_i2c()).expect("could initialise TOF sensor");
-        validate_distance::spawn_after((MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS + 1).millis()).ok();
+            tof_sensor =
+                Some(TOFSensor::new(i2c.acquire_i2c()).expect("could initialise TOF sensor"));
+            validate_distance::spawn_after((MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS + 1).millis()).ok();
+        }
+        #[cfg(not(feature = "use-tof"))]
+        {
+            tof_sensor = None;
 
-        let display = setup_display(i2c.acquire_i2c()).map(Some).unwrap_or(None);
+            defmt::warn!("TOF setup SKIPPED (TOF not enabled)");
+        }
+
+        let display;
+        #[cfg(feature = "use-display")]
+        {
+            display = setup_display(i2c.acquire_i2c()).map(Some).unwrap_or(None);
+        }
+        #[cfg(not(feature = "use-display"))]
+        {
+            display = None;
+
+            defmt::warn!("display setup SKIPPED (display not enabled)");
+        }
 
         // set up USART (for the bluetooth module)
         let bt_module = BluefruitLEUARTFriend::new(
@@ -195,6 +222,7 @@ mod app {
         watchdog
     }
 
+    #[cfg(feature = "use-display")]
     fn setup_display(i2c: I2cProxy) -> Result<Display, DisplayError> {
         let interface = I2CDisplayInterface::new_alternate_address(i2c); // our display runs on 0x3D, not 0x3C
         let mut display = Ssd1306::new(interface, DisplaySize128x64, DisplayRotation::Rotate0)

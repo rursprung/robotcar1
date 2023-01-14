@@ -34,6 +34,15 @@ ssd1306 = "0.7"
 
 itoa = "1.0"
 
+[features]
+default = [ "use-display", "use-tof" ]
+
+use-display = [ "has-i2c-device" ]
+use-tof = [ "has-i2c-device" ]
+
+# don't set this one directly!
+has-i2c-device = []
+
 [profile.release]
 codegen-units = 1
 lto = true

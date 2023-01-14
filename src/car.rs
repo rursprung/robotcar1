@@ -45,7 +45,7 @@ where
     // peripherals
     steering: Servo<ServoPwm>,
     motor: Motor<MAIN1, MAIN2, MAPWM>,
-    front_distance_sensor: DS,
+    front_distance_sensor: Option<DS>,
     display: Option<Display>,
 
     // data
@@ -69,7 +69,7 @@ where
     pub fn new(
         steering: Servo<ServoPwm>,
         motor: Motor<MAIN1, MAIN2, MAPWM>,
-        distance_sensor: DS,
+        front_distance_sensor: Option<DS>,
         display: Option<Display>,
     ) -> Self {
         Car {
@@ -77,7 +77,7 @@ where
             motor,
             display,
             current_state: Normal,
-            front_distance_sensor: distance_sensor,
+            front_distance_sensor,
             latest_front_distance_in_mm: None,
             last_front_distance_update: None,
             _distance_sensor_error: PhantomData,
@@ -124,32 +124,36 @@ where
         &mut self,
         now: fugit::TimerInstantU32<1_000_000>,
     ) -> Result<(), DE> {
-        if let Err(e) = self.front_distance_sensor.clear_interrupt() {
-            self.latest_front_distance_in_mm = None;
-            return Err(e);
-        }
-        let result = match self.front_distance_sensor.get_distance_in_mm() {
-            Ok(distance) => {
-                defmt::debug!("Received range: {}mm", distance);
-                self.latest_front_distance_in_mm = Some(distance);
-                self.last_front_distance_update = Some(now);
-                Ok(())
-            }
-            Err(e) => {
-                defmt::error!(
-                    "Failed to get distance from TOF: {}",
-                    defmt::Debug2Format(&e)
-                );
+        if let Some(front_distance_sensor) = self.front_distance_sensor.as_mut() {
+            if let Err(e) = front_distance_sensor.clear_interrupt() {
                 self.latest_front_distance_in_mm = None;
-                Err(e)
+                return Err(e);
             }
-        };
+            let result = match front_distance_sensor.get_distance_in_mm() {
+                Ok(distance) => {
+                    defmt::debug!("Received range: {}mm", distance);
+                    self.latest_front_distance_in_mm = Some(distance);
+                    self.last_front_distance_update = Some(now);
+                    Ok(())
+                }
+                Err(e) => {
+                    defmt::error!(
+                        "Failed to get distance from TOF: {}",
+                        defmt::Debug2Format(&e)
+                    );
+                    self.latest_front_distance_in_mm = None;
+                    Err(e)
+                }
+            };
 
-        self.validate_distance(now);
+            self.validate_distance(now);
 
-        self.update_display();
+            self.update_display();
 
-        result
+            result
+        } else {
+            panic!("handle_distance_sensor_interrupt triggered but no TOF support enabled!");
+        }
     }
 
     pub fn validate_distance(&mut self, now: fugit::TimerInstantU32<1_000_000>) {
