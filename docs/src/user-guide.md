@@ -30,5 +30,7 @@ The other keys are not assigned.
 
 The car will automatically brake when you get too close to an obstacle in front. You'll still be able to reverse and steer
 at that moment, until the distance in front is large enough and you can drive forward again.
+If the car has detected an obstacle a red LED will turn on to indicate this. Once the obstacle has been cleared, the LED
+will turn off.
 
 The display on the device will show the distance (in mm) to a potential obstacle in front of the car.

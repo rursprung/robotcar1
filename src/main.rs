@@ -40,7 +40,7 @@ mod app {
         watchdog::IndependentWatchdog,
     };
     use stm32f4xx_hal::{
-        gpio::{Output, PB4, PB5, PB8, PB9},
+        gpio::{Output, PA8, PB4, PB5, PB8, PB9},
         i2c::{self, I2c1},
         pac::{TIM2, TIM3},
         timer::PwmChannel,
@@ -61,6 +61,7 @@ mod app {
         PwmChannel<TIM2, 2>,
         TOFSensor<I2cProxy, i2c::Error>,
         vl53l1x_uld::Error<i2c::Error>,
+        PA8<Output>,
     >;
 
     #[shared]
@@ -96,7 +97,7 @@ mod app {
 
         // set up the status LEDs
         let mut led_status_ok = gpioa.pa7.into_push_pull_output();
-        let _led_status_autonomous = gpioa.pa8.into_push_pull_output();
+        let led_status_obstacle = gpioa.pa8.into_push_pull_output();
 
         // set up the user button
         let mut button = gpioa.pa9.into_pull_down_input();
@@ -201,7 +202,7 @@ mod app {
 
         defmt::info!("motor setup done");
 
-        let car = Car::new(steering, motor1, tof_sensor, display);
+        let car = Car::new(steering, motor1, tof_sensor, display, led_status_obstacle);
 
         let watchdog = setup_watchdog(ctx.device.IWDG);
 

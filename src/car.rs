@@ -38,7 +38,7 @@ pub const MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS: u32 = 200;
 const MIN_FRONT_DISTANCE_IN_MM: u16 = 500;
 
 /// Represents the robot car.
-pub struct Car<ServoPwm, MAIN1, MAIN2, MAPWM, DS, DE>
+pub struct Car<ServoPwm, MAIN1, MAIN2, MAPWM, DS, DE, OLED>
 where
     ServoPwm: PwmPin,
     DS: DistanceSensor<DE>,
@@ -48,6 +48,7 @@ where
     motor: Motor<MAIN1, MAIN2, MAPWM>,
     front_distance_sensor: Option<DS>,
     display: Option<Display>,
+    led_status_obstacle: OLED,
 
     // data
     current_state: CarState,
@@ -58,7 +59,7 @@ where
     _distance_sensor_error: PhantomData<DE>,
 }
 
-impl<ServoPwm, MAIN1, MAIN2, MAPWM, DS, DE> Car<ServoPwm, MAIN1, MAIN2, MAPWM, DS, DE>
+impl<ServoPwm, MAIN1, MAIN2, MAPWM, DS, DE, OLED> Car<ServoPwm, MAIN1, MAIN2, MAPWM, DS, DE, OLED>
 where
     ServoPwm: PwmPin<Duty = u16>,
     MAIN1: OutputPin,
@@ -66,17 +67,20 @@ where
     MAPWM: PwmPin<Duty = u16>,
     DS: DistanceSensor<DE>,
     DE: Debug,
+    OLED: OutputPin,
 {
     pub fn new(
         steering: Steering<ServoPwm>,
         motor: Motor<MAIN1, MAIN2, MAPWM>,
         front_distance_sensor: Option<DS>,
         display: Option<Display>,
+        led_status_obstacle: OLED,
     ) -> Self {
         Car {
             steering,
             motor,
             display,
+            led_status_obstacle,
             current_state: Normal,
             front_distance_sensor,
             latest_front_distance_in_mm: None,
@@ -169,12 +173,14 @@ where
                 if let Some(distance_in_mm) = self.latest_front_distance_in_mm {
                     if distance_in_mm < MIN_FRONT_DISTANCE_IN_MM {
                         self.halt_if_driving_forward();
+                        self.led_status_obstacle.set_high().ok();
                         if self.current_state != ForwardDistanceInvalid {
                             defmt::warn!("collision warning, the front distance of {}mm is less than the safe minimum of {}mm - stopping the car!", distance_in_mm, MIN_FRONT_DISTANCE_IN_MM);
                             self.current_state = ForwardDistanceInvalid;
                         }
                     } else {
                         // enough distance => allow driving forward
+                        self.led_status_obstacle.set_low().ok();
                         self.current_state = Normal;
                     }
                 }
