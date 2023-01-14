@@ -176,9 +176,9 @@ mod app {
 
         defmt::info!("servo setup done");
 
-        // set up the steering
-        let steering_centre_pwm = 5000;
-        let max_steering_side = 1200;
+        // set up the steering. PWM empirically determined.
+        let steering_centre_pwm = 4930;
+        let max_steering_side = 800;
         let steering = Steering::new(servo1_pwm, steering_centre_pwm, max_steering_side);
 
         defmt::info!("steering setup done");
