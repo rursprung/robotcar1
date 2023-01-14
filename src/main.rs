@@ -104,10 +104,14 @@ mod app {
         button.enable_interrupt(&mut ctx.device.EXTI);
         button.trigger_on_edge(&mut ctx.device.EXTI, Edge::Falling);
 
+        defmt::info!("LED & button setup done");
+
         // set up I2C
         let i2c = I2c::new(ctx.device.I2C1, (gpiob.pb8, gpiob.pb9), 400.kHz(), &clocks);
         #[cfg_attr(not(feature = "use-tof"), allow(unused))]
         let i2c = shared_bus::new_atomic_check!(I2C1 = i2c).unwrap();
+
+        defmt::info!("I2C setup done");
 
         // the pin is always needed (unless we want to change the code even more to make this optional as well)
         #[cfg_attr(not(feature = "use-tof"), allow(unused_mut))]
@@ -123,6 +127,8 @@ mod app {
             tof_sensor =
                 Some(TOFSensor::new(i2c.acquire_i2c()).expect("could initialise TOF sensor"));
             validate_distance::spawn_after((MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS + 1).millis()).ok();
+
+            defmt::info!("TOF setup done");
         }
         #[cfg(not(feature = "use-tof"))]
         {
@@ -135,6 +141,8 @@ mod app {
         #[cfg(feature = "use-display")]
         {
             display = setup_display(i2c.acquire_i2c()).map(Some).unwrap_or(None);
+
+            defmt::info!("display setup done");
         }
         #[cfg(not(feature = "use-display"))]
         {
@@ -152,6 +160,8 @@ mod app {
             &clocks,
         );
         let remote_control = RemoteControl::new(bt_module);
+
+        defmt::info!("bluetooth setup done");
 
         // set up servo 1 & 2
         let (servo1_pwm, _servo2_pwm) = ctx
@@ -173,6 +183,8 @@ mod app {
             90,
         );
 
+        defmt::info!("servo setup done");
+
         // set up motor A & B
         let motor_a_in1 = gpiob.pb5.into_push_pull_output();
         let motor_a_in2 = gpiob.pb4.into_push_pull_output();
@@ -189,11 +201,13 @@ mod app {
             .split();
         let motor1 = Motor::new(motor_a_in1, motor_a_in2, motor_a_pwm);
 
+        defmt::info!("motor setup done");
+
         let car = Car::new(servo1, motor1, tof_sensor, display);
 
         let watchdog = setup_watchdog(ctx.device.IWDG);
 
-        defmt::info!("init done");
+        defmt::info!("init done, watchdog started");
 
         // init is done, show this with the LED lighting up
         led_status_ok.set_high();
