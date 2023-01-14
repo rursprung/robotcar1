@@ -167,9 +167,11 @@ where
                 // and just keep the previous state until we either time out (see above) or have a distance available again.
                 if let Some(distance_in_mm) = self.latest_front_distance_in_mm {
                     if distance_in_mm < MIN_FRONT_DISTANCE_IN_MM {
-                        defmt::warn!("collision warning, the front distance of {}mm is less than the safe minimum of {}mm - stopping the car!", distance_in_mm, MIN_FRONT_DISTANCE_IN_MM);
                         self.halt_if_driving_forward();
-                        self.current_state = ForwardDistanceInvalid;
+                        if self.current_state != ForwardDistanceInvalid {
+                            defmt::warn!("collision warning, the front distance of {}mm is less than the safe minimum of {}mm - stopping the car!", distance_in_mm, MIN_FRONT_DISTANCE_IN_MM);
+                            self.current_state = ForwardDistanceInvalid;
+                        }
                     } else {
                         // enough distance => allow driving forward
                         self.current_state = Normal;
