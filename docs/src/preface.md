@@ -15,7 +15,7 @@ As part of this project several code artefacts have been created:
   [my activity stream on GitHub](https://github.com/rursprung/) for the duration between September 2022 and January 2023 -
   it should be obvious which ones were related to this project).
 
-## Documentation Available
+## Available Documentation
 This documentation is in addition to the in-code documentation, not a replacement thereof. For implementation details
 and refer to the source code and its inline documentation.
 
