@@ -42,4 +42,8 @@ The board is designed to be run with ca. 12V as input (8x AA batteries) and a ma
 The board provides VIN to the motor(s) and the microcontroller board (which has its own voltage regulators),
 5V to the servo(s) and 3.3V to the other components.
 
+Each motor (only one is installed, but two would be supported) can consume up to 2A, each servo (again, only one
+installed but two supported) can consume up to 1A and the Nucleo board requires max. 800mA. All other components have
+negligible power requirements.
+
 The layout of the buck converter and LTO has been taken from the respective datasheet (which provide best practices for the layouts).
