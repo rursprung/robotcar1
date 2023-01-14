@@ -6,7 +6,7 @@
 mod bt_module;
 mod car;
 mod remote_control;
-mod servo;
+mod steering;
 mod tof_sensor;
 
 use panic_probe as _;
@@ -22,7 +22,7 @@ mod app {
         bt_module::BluefruitLEUARTFriend,
         car::{Car, MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS},
         remote_control::RemoteControl,
-        servo::Servo,
+        steering::Steering,
         tof_sensor::TOFSensor,
     };
     #[cfg(feature = "use-display")]
@@ -173,17 +173,15 @@ mod app {
                 &clocks,
             )
             .split();
-        // TODO: this is not 0 - 180°, change the code a bit to represent this
-        let steering_centre_pwm = 5000;
-        let max_steering_side = 1200;
-        let servo1 = Servo::new(
-            servo1_pwm,
-            steering_centre_pwm - max_steering_side,
-            steering_centre_pwm + max_steering_side,
-            90,
-        );
 
         defmt::info!("servo setup done");
+
+        // set up the steering
+        let steering_centre_pwm = 5000;
+        let max_steering_side = 1200;
+        let steering = Steering::new(servo1_pwm, steering_centre_pwm, max_steering_side);
+
+        defmt::info!("steering setup done");
 
         // set up motor A & B
         let motor_a_in1 = gpiob.pb5.into_push_pull_output();
@@ -203,7 +201,7 @@ mod app {
 
         defmt::info!("motor setup done");
 
-        let car = Car::new(servo1, motor1, tof_sensor, display);
+        let car = Car::new(steering, motor1, tof_sensor, display);
 
         let watchdog = setup_watchdog(ctx.device.IWDG);
 

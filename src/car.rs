@@ -1,6 +1,7 @@
 use crate::app::Display;
 use crate::car::CarState::{ForwardDistanceInvalid, Normal};
-use crate::servo::Servo;
+use crate::steering::Direction::{Centre, Left, Right};
+use crate::steering::Steering;
 use crate::tof_sensor::DistanceSensor;
 use core::fmt::Debug;
 use core::marker::PhantomData;
@@ -43,7 +44,7 @@ where
     DS: DistanceSensor<DE>,
 {
     // peripherals
-    steering: Servo<ServoPwm>,
+    steering: Steering<ServoPwm>,
     motor: Motor<MAIN1, MAIN2, MAPWM>,
     front_distance_sensor: Option<DS>,
     display: Option<Display>,
@@ -67,7 +68,7 @@ where
     DE: Debug,
 {
     pub fn new(
-        steering: Servo<ServoPwm>,
+        steering: Steering<ServoPwm>,
         motor: Motor<MAIN1, MAIN2, MAPWM>,
         front_distance_sensor: Option<DS>,
         display: Option<Display>,
@@ -85,15 +86,15 @@ where
     }
 
     pub fn steer_left(&mut self) {
-        self.steering.steer(0);
+        self.steering.steer(Left(100)).ok(); // we know that 100% is an acceptable value
     }
 
     pub fn steer_center(&mut self) {
-        self.steering.steer(90);
+        self.steering.steer(Centre).ok(); // we know that 100% is an acceptable value
     }
 
     pub fn steer_right(&mut self) {
-        self.steering.steer(180);
+        self.steering.steer(Right(100)).ok(); // we know that 100% is an acceptable value
     }
 
     pub fn drive_forward(&mut self, speed: u8) -> Result<(), Error> {
