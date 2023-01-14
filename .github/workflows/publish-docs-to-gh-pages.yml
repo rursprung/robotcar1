@@ -24,6 +24,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+      # create mdbook
       - name: Install mdBook
         run: cargo install mdbook
       - name: Test Docs
@@ -32,6 +33,16 @@ jobs:
       - name: Build Docs
         run: mdbook build
         working-directory: docs
+      # create source docs
+      - name: Install rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: thumbv7em-none-eabihf
+      - name: Create documentation
+        run: cargo doc
+      - name: Copy documentation into book structure
+        run: cp -r target/thumbv7em-none-eabihf/doc/ docs/book/src-doc/
+      # publish
       - name: Setup Pages
         uses: actions/configure-pages@v2
       - name: Upload artifact

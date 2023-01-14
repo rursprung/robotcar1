@@ -52,6 +52,10 @@ The following drivers have been used for the peripherals:
 | BLE ([Adafruit Bluefruit LE UART Friend](https://learn.adafruit.com/introducing-the-adafruit-bluefruit-le-uart-friend)) | n/a                                                 | Uses basic UART in our use-case, thus no dedicated driver needed. Protocol support implemented as part of this project in [adafruit-bluefruit-protocol](https://crates.io/crates/adafruit-bluefruit-protocol). Only button events are enabled here as all other events are not needed for this project. |
 | Motor Driver ([SparkFun Motor Driver - Dual TB6612FNG](https://www.sparkfun.com/products/14450))                        | [tb6612fng](https://crates.io/crates/tb6612fng)     | Implemented as part of this project.                                                                                                                                                                                                                                                                    |
 
+## Details
+The code should be largely self-explaining, but comments have been added. The generated documentation is [also published here](./src-doc/robotcar/).
+You can also generate it for yourself by running `cargo doc --open` in the repository root.
+
 ## Compiling & Running It
 Please refer to the README located in the repository root for the necessary steps to compile & run the program on the
 target device.
