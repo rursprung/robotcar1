@@ -23,16 +23,34 @@ The logic has been split so that there's a general `Car` representation (which d
 a separate `RemoteControl` (which is aware of the car and can direct it). The `Car` API is hardware-agnostic, i.e.
 its consumers do not have to be aware of the fact that its steering is implemented using a PWM-controlled servo motor.
 
+In the future, an `AutomaticControl` or similar could be added which would then implement a somewhat-autonomous mode. This
+should not require changes to `Car` and only the RTIC code would have to be aware of it to select it and call it if data
+is available (and optionally the remote control could be aware of it to allow starting/stopping the autonomous mode from there).
+
+## Interrupts
+As stated, the whole behaviour is interrupt-driven. The following interrupts can trigger actions:
+* TOF data available: reads the data and triggers the collision avoidance
+* Bluetooth data received (either UART line idle or DMA full interrupt): handle the bluetooth message for the remote control
+  and act on the event (steering, speed change, etc.)
+  * Note: the DMA full interrupt is implemented for completeness's sake, as it _could_ be triggered if a lot of data is
+    sent in one go, however this is extremely unlikely as long as the standard smartphone app is being used.
+  * Bluetooth messages are processed with best effort, i.e. if a message (or a command within a message) is lost then
+    no attempt is made to recover or reprocess the message. As it's based on short-term user interaction the user will
+    most likely already have triggered the action again if it is still needed. No explicit at-most-once check is implemented
+    because the protocol from Adafruit does not include a unique identifier for each event, but it can be presumed that
+    under normal circumstances messages are sent only once.
+* User button pressed: currently only writes a log message as the button is not used at this point
+
 ## Drivers for Peripherals
 The following drivers have been used for the peripherals:
 
-| Peripheral                                                                                                              | Driver                                              | Comment                                                                                                                                                                                                        |
-|-------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Peripheral                                                                                                              | Driver                                              | Comment                                                                                                                                                                                                                                                                                                 |
+|-------------------------------------------------------------------------------------------------------------------------|-----------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | TOF Sensor ([ST VL53L1X](https://www.st.com/en/imaging-and-photonics-solutions/vl53l1x.html))                           | [vl53l1x-uld](https://crates.io/crates/vl53l1x-uld) ||
 | Display ([Adafruit 128x64 OLED Display](https://www.adafruit.com/product/326))                                          | [ssd1306](https://crates.io/crates/ssd1306)         ||
-| IMU ([Adafruit MPU6050](https://learn.adafruit.com/mpu6050-6-dof-accelerometer-and-gyro))                               | [mpu6050](https://crates.io/crates/mpu6050)         | Currently unused, thus not included in the code.                                                                                                                                                               |
-| BLE ([Adafruit Bluefruit LE UART Friend](https://learn.adafruit.com/introducing-the-adafruit-bluefruit-le-uart-friend)) | n/a                                                 | Uses basic UART in our use-case, thus no dedicated driver needed. Protocol support implemented as part of this project in [adafruit-bluefruit-protocol](https://crates.io/crates/adafruit-bluefruit-protocol). |
-| Motor Driver ([SparkFun Motor Driver - Dual TB6612FNG](https://www.sparkfun.com/products/14450))                        | [tb6612fng](https://crates.io/crates/tb6612fng)     | Implemented as part of this project.                                                                                                                                                                           |
+| IMU ([Adafruit MPU6050](https://learn.adafruit.com/mpu6050-6-dof-accelerometer-and-gyro))                               | [mpu6050](https://crates.io/crates/mpu6050)         | Currently unused, thus not included in the code.                                                                                                                                                                                                                                                        |
+| BLE ([Adafruit Bluefruit LE UART Friend](https://learn.adafruit.com/introducing-the-adafruit-bluefruit-le-uart-friend)) | n/a                                                 | Uses basic UART in our use-case, thus no dedicated driver needed. Protocol support implemented as part of this project in [adafruit-bluefruit-protocol](https://crates.io/crates/adafruit-bluefruit-protocol). Only button events are enabled here as all other events are not needed for this project. |
+| Motor Driver ([SparkFun Motor Driver - Dual TB6612FNG](https://www.sparkfun.com/products/14450))                        | [tb6612fng](https://crates.io/crates/tb6612fng)     | Implemented as part of this project.                                                                                                                                                                                                                                                                    |
 
 ## Compiling & Running It
 Please refer to the README located in the repository root for the necessary steps to compile & run the program on the
