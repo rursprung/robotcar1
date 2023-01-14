@@ -18,3 +18,8 @@ The documentation for it (besides the one in the code) can be found [online](htt
      otherwise the board might not start correctly (this is a limitation of the ST board and unrelated to this software).
 2. Run `cargo run` (the correct chip & target is already defined in `Cargo.toml` and `.cargo/config`)
 3. Enjoy your running program :)
+
+## License
+As this is purely an educational project there's no need for others to include it in their commercial works.
+Accordingly, this is licensed under the **GNU General Public License v3.0 or later** (SPDX: `GPL-3.0-or-later`).
+See [LICENSE](LICENSE) for the full license text.
