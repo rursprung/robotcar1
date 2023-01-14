@@ -136,10 +136,6 @@ where
         now: fugit::TimerInstantU32<1_000_000>,
     ) -> Result<(), DE> {
         if let Some(front_distance_sensor) = self.front_distance_sensor.as_mut() {
-            if let Err(e) = front_distance_sensor.clear_interrupt() {
-                self.latest_front_distance_in_mm = None;
-                return Err(e);
-            }
             let result = match front_distance_sensor.get_distance_in_mm() {
                 Ok(distance) => {
                     defmt::debug!("Received range: {}mm", distance);

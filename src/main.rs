@@ -28,7 +28,6 @@ mod app {
         car::{Car, MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS},
         remote_control::RemoteControl,
         steering::Steering,
-        tof_sensor::TOFSensor,
     };
     #[cfg(feature = "use-display")]
     use display_interface::DisplayError;
@@ -51,6 +50,7 @@ mod app {
         timer::PwmChannel,
     };
     use tb6612fng::Motor;
+    use vl53l1x_uld::{self, IOVoltage, Polarity, DEFAULT_ADDRESS, VL53L1X};
 
     #[monotonic(binds = TIM5, default = true)]
     type MicrosecMono = MonoTimerUs<TIM5>;
@@ -64,7 +64,7 @@ mod app {
         PB5<Output>,
         PB4<Output>,
         PwmChannel<TIM2, 2>,
-        TOFSensor<I2cProxy, i2c::Error>,
+        VL53L1X<I2cProxy>,
         vl53l1x_uld::Error<i2c::Error>,
         PA8<Output>,
     >;
@@ -130,8 +130,7 @@ mod app {
             tof_data_interrupt_pin.enable_interrupt(&mut ctx.device.EXTI);
             tof_data_interrupt_pin.trigger_on_edge(&mut ctx.device.EXTI, Edge::Falling);
 
-            tof_sensor =
-                Some(TOFSensor::new(i2c.acquire_i2c()).expect("could initialise TOF sensor"));
+            tof_sensor = Some(setup_tof(i2c.acquire_i2c()).expect("could initialise TOF sensor"));
             validate_distance::spawn_after((MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS + 1).millis()).ok();
 
             defmt::info!("TOF setup done");
@@ -249,6 +248,17 @@ mod app {
         display.init()?;
         display.flush()?;
         Ok(display)
+    }
+
+    /// Set up the TOF sensor.
+    #[cfg(feature = "use-tof")]
+    fn setup_tof(i2c: I2cProxy) -> Result<VL53L1X<I2cProxy>, vl53l1x_uld::Error<i2c::Error>> {
+        let mut device = VL53L1X::new(i2c, DEFAULT_ADDRESS);
+        device.init(IOVoltage::Volt2_8)?;
+        device.set_interrupt_polarity(Polarity::ActiveHigh)?;
+        device.start_ranging()?;
+
+        Ok(device)
     }
 
     /// Feed the watchdog periodically to avoid a hardware reset.
