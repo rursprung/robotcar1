@@ -1,3 +1,6 @@
+//! Contains the logic for the remote control. This deals with the events sent by the remote control
+//! app (e.g. on a smartphone) and triggers the corresponding actions on the robotcar.
+
 use crate::bt_module::BluefruitLEUARTFriend;
 use crate::CarT as Car;
 use adafruit_bluefruit_protocol::{
@@ -7,22 +10,28 @@ use adafruit_bluefruit_protocol::{
 };
 use core::cmp::{max, min, Ordering};
 
+/// The remote control which handles the events sent by an app.
 pub struct RemoteControl {
     bt_module: BluefruitLEUARTFriend,
 }
 
 impl RemoteControl {
+    /// Instantiate a new remote control to handle events.
     pub fn new(bt_module: BluefruitLEUARTFriend) -> RemoteControl {
         RemoteControl { bt_module }
     }
 
+    /// This needs to be triggered every time a bluetooth message has been received, which is either
+    /// the case if either a line idle interrupt or a DMA full interrupt occurs.
+    ///
+    /// It handles the DMA buffer and acts on the message received.
     pub fn handle_bluetooth_message(&mut self, car: &mut Car) {
         let (filled_buffer, _) = self
             .bt_module
             .rx_transfer
             .next_transfer(self.bt_module.rx_buffer.take().unwrap())
             .unwrap();
-        defmt::debug!(
+        defmt::trace!(
             "bluetooth: DMA transfer complete, received {:a}",
             filled_buffer
         );
@@ -55,6 +64,7 @@ impl RemoteControl {
         }
     }
 
+    /// Button events are used to remotely control the car (steering, speed change, etc.).
     fn handle_button_event(&mut self, event: ButtonEvent, car: &mut Car) {
         defmt::debug!("handling {}", event);
         match (event.button(), event.state()) {

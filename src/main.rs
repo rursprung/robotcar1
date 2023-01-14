@@ -1,3 +1,8 @@
+//! This is my first mobile robotics project (a 3rd semester module) of the [BSc in Mobile Robotics at FHGR](https://fhgr.ch/mr).
+//! This is a toy RC car (called "robotcar") which can be remote-controlled.
+//!
+//! The documentation for it (besides the one in the code) can be found [online](https://rursprung.github.io/robotcar1/).
+
 #![deny(unsafe_code)]
 #![deny(warnings)]
 #![no_main]
@@ -225,7 +230,7 @@ mod app {
         )
     }
 
-    /// Set up the independent watchdog and start the period task to feed it
+    /// Set up the independent watchdog and start the periodic task to feed it
     fn setup_watchdog(iwdg: IWDG) -> IndependentWatchdog {
         let mut watchdog = IndependentWatchdog::new(iwdg);
         watchdog.start(500u32.millis());
@@ -235,6 +240,7 @@ mod app {
         watchdog
     }
 
+    /// Set up the display and initialise it with a clean screen.
     #[cfg(feature = "use-display")]
     fn setup_display(i2c: I2cProxy) -> Result<Display, DisplayError> {
         let interface = I2CDisplayInterface::new_alternate_address(i2c); // our display runs on 0x3D, not 0x3C
@@ -245,7 +251,7 @@ mod app {
         Ok(display)
     }
 
-    /// Feed the watchdog periodically to avoid hardware reset.
+    /// Feed the watchdog periodically to avoid a hardware reset.
     #[task(priority = 1, local = [watchdog])]
     fn feed_watchdog(cx: feed_watchdog::Context) {
         defmt::trace!("feeding the watchdog!");
@@ -283,6 +289,14 @@ mod app {
         validate_distance::spawn_after((MAX_FRONT_DISTANCE_SENSOR_LAG_IN_MS + 1).millis()).ok();
     }
 
+    /// Handle the possibility that the DMA buffer fills up before a line idle signal occurs.
+    /// As long as the standard smartphone app is used this is extremely unlikely to happen.
+    /// This has just been implemented for completeness sake.
+    ///
+    /// If this happens in the worst-case a message will be cut off in the middle and will be lost,
+    /// which is not very tragic as the user can just trigger it again.
+    ///
+    /// This does the same as [`bluetooth_receive_interrupt`].
     #[task(binds = DMA2_STREAM2, shared = [remote_control, car])]
     fn bluetooth_dma_interrupt(mut ctx: bluetooth_dma_interrupt::Context) {
         defmt::debug!("received DMA2_STREAM2 interrupt (transfer complete)");
@@ -295,6 +309,7 @@ mod app {
         }
     }
 
+    /// A message has been received via bluetooth and will be processed by the remote control.
     #[task(binds = USART1, shared = [remote_control, car])]
     fn bluetooth_receive_interrupt(mut ctx: bluetooth_receive_interrupt::Context) {
         defmt::debug!("received USART1 interrupt (IDLE)");

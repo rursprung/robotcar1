@@ -1,8 +1,11 @@
+//! This represents a steering unit on the robotcar, powered by a servo motor.
+
 use crate::steering::Direction::{Centre, Left, Right};
 use crate::steering::Error::InvalidPercentage;
 use defmt::Format;
 use embedded_hal::PwmPin;
 
+/// The steering unit of the robotcar.
 pub struct Steering<PWM>
 where
     PWM: PwmPin,
@@ -50,6 +53,7 @@ where
         servo
     }
 
+    /// Set the new steering direction. The direction will be kept until the next call which sets a new direction.
     pub fn steer(&mut self, direction: Direction) -> Result<(), Error> {
         let duty = match direction {
             Centre => self.steering_centre,

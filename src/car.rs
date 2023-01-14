@@ -1,3 +1,6 @@
+//! The functionality within this module represents the robotcar. It abstracts away the technical
+//! details from its consumers.
+
 use crate::app::Display;
 use crate::car::CarState::{ForwardDistanceInvalid, Normal};
 use crate::steering::Direction::{Centre, Left, Right};
@@ -17,7 +20,8 @@ use embedded_hal::PwmPin;
 use fugit::ExtU32;
 use tb6612fng::{DriveError, Motor};
 
-#[derive(PartialEq, Eq, Debug, Format)]
+/// The current state of the car, based on its knowledge of its surroundings.
+#[derive(PartialEq, Eq, Debug, Copy, Clone, Format)]
 pub enum CarState {
     /// Normal operation mode, car can be remotely controlled.
     Normal,
@@ -25,9 +29,12 @@ pub enum CarState {
     ForwardDistanceInvalid,
 }
 
-#[derive(PartialEq, Eq, Debug, Format)]
+/// Errors which can potentially happen while interacting with the car.
+#[derive(PartialEq, Eq, Debug, Copy, Clone, Format)]
 pub enum Error {
-    NotAllowedToDrive,
+    /// An attempt was made to drive forward but this is currently prohibited (collision avoidance).
+    NotAllowedToDriveForward,
+    /// Something went wrong in the underlying motor control library. See the attached error for further details.
     DriveError(DriveError),
 }
 
@@ -52,7 +59,6 @@ where
 
     // data
     current_state: CarState,
-    /// The latest measurement of the front distance (if available)
     latest_front_distance_in_mm: Option<u16>,
     last_front_distance_update: Option<fugit::TimerInstantU32<1_000_000>>,
     /// Needed to be able to specify the `DE` type parameter
@@ -103,7 +109,7 @@ where
 
     pub fn drive_forward(&mut self, speed: u8) -> Result<(), Error> {
         if self.current_state != Normal {
-            return Err(Error::NotAllowedToDrive);
+            return Err(Error::NotAllowedToDriveForward);
         }
 
         self.motor.drive_forward(speed).map_err(Error::DriveError)

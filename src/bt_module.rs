@@ -1,3 +1,5 @@
+//! Represents the bluetooth module and abstracts away some of the technical details for other consumers.
+
 use stm32f4xx_hal::{
     dma::{config::DmaConfig, PeripheralToMemory, Stream2, StreamsTuple, Transfer},
     gpio::{PA10, PB6},
@@ -13,6 +15,8 @@ pub type USART1RxBuffer = Option<USART1RxBufferInt>;
 pub type USART1RxTransfer =
     Transfer<Stream2<DMA2>, 4_u8, Rx<USART1>, PeripheralToMemory, USART1RxBufferInt>;
 
+/// Represents the [Adafruit Bluefruit LE UART Friend](https://learn.adafruit.com/introducing-the-adafruit-bluefruit-le-uart-friend)
+/// connected via USART and with DMA enabled for USART.
 pub struct BluefruitLEUARTFriend {
     pub rx_transfer: USART1RxTransfer,
     pub rx_buffer: USART1RxBuffer,
@@ -29,6 +33,7 @@ impl BluefruitLEUARTFriend {
         rx_pin: PA10,
         clocks: &Clocks,
     ) -> BluefruitLEUARTFriend {
+        // set up USART1
         let usart1 = Serial::new(
             pac_usart1,
             (tx_pin.into_alternate(), rx_pin.into_alternate()),
@@ -42,6 +47,7 @@ impl BluefruitLEUARTFriend {
         let (_usart1_tx, mut usart1_rx) = usart1.split();
         usart1_rx.listen_idle();
 
+        // set up DMA for USART1 RX
         let streams = StreamsTuple::new(pac_dma2);
         let rx_stream = streams.2;
         let rx_buffer = cortex_m::singleton!(: [u8; adafruit_bluefruit_protocol::MAX_CONTROLLER_MESSAGE_LENGTH] = [0; adafruit_bluefruit_protocol::MAX_CONTROLLER_MESSAGE_LENGTH])
