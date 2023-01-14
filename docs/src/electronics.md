@@ -24,6 +24,8 @@ The PCB contains the following components:
     * IMU ([Adafruit MPU6050](https://learn.adafruit.com/mpu6050-6-dof-accelerometer-and-gyro))
     * User button
     * Reset button (triggers a reset of the microcontroller)
+    * 1 power indicator LED (shows that power is available on 5V)
+    * 2 status LEDs
 * Connectors / debug connectors
     * I2C connector
     * 3 GPIO pins

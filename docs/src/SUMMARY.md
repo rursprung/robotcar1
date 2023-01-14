@@ -12,4 +12,5 @@
     - [Programming Language](./design-decisions/why-rust.md)
     - [Base Frameworks](./design-decisions/base-frameworks.md)
     - [TOF Sensor](./design-decisions/tof-sensor.md)
+    - [Stack Overflow Protection](./design-decisions/flip-link.md)
 - [Future Steps](./future_steps.md)

@@ -6,6 +6,10 @@ The same also goes for further information on [RTIC](https://rtic.rs/).
 There's also a [community blog post](https://www.anyleaf.org/blog/rust-embedded-ecosystem-and-tools) which contains similar
 information to what's been listed here.
 
+This page is _not_ meant to teach you how to program in Rust, and it's not meant as original research. Instead, this is
+a very quick overview of the things which might be relevant in this project. Please do read through the learning resources
+linked above to get a proper understanding of these concepts.
+
 ## Crates
 Rust libraries are called crates and are often published on [crates.io](https://crates.io/) (but can also be pulled in from
 other sources, e.g. local paths or git repositories).
@@ -39,16 +43,19 @@ can be used as well. This will provide all OS-independent but dynamically alloca
 ### Different Hardware Abstractions
 By convention there are different "levels" of abstraction when interacting with hardware in Rust. From the bottom up (higher is preferred):
 1. No abstraction, know the memory location of registers and directly manipulate them (requires `unsafe` Rust, bound to specific hardware)
-1. Peripheral Access Crate (PAC): low-level APIs to interact with the registers of a specific device.
+2. Peripheral Access Crate (PAC): low-level APIs to interact with the registers of a specific device.
    Usually generated from SVD files using [`svd2rust`](https://github.com/rust-embedded/svd2rust/). Still requires some `unsafe` code and offers
    nearly no hardware abstraction, i.e. you still need to interact with the registers, but don't need to know the memory addresses.
-1. Hardware Abstraction Layer (HAL): higher-level APIs to interact with a specific device (or often device family).
+3. Hardware Abstraction Layer (HAL): higher-level APIs to interact with a specific device (or often device family).
    Usually no `unsafe` Rust is needed. Offers APIs like "set this output port to high".
-1. Board Support Package (BSP): high-level APIs for specific boards, offering opinionated APIs for that board (e.g. directly
+4. Board Support Package (BSP): high-level APIs for specific boards, offering opinionated APIs for that board (e.g. directly
    turning specific pins into inputs or outputs because they are known to be connected to certain peripheral mounted on the board
    and offering them under the appropriate name).
 
 See [the embedded Rust book](https://docs.rust-embedded.org/book/start/registers.html) for more details.
+
+Besides this, there are also drivers for peripherals, which are generally agnostic to the specific environment where
+they're being run on, thanks due to abstraction layers like `embedded-hal`.
 
 ### Generic HAL: `embedded-hal`
 The Rust embedded community offers a generic set of APIs for HALs: [`embedded-hal`](https://github.com/rust-embedded/embedded-hal).

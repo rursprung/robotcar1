@@ -24,3 +24,8 @@ At the moment (January 2023) Embassy does not yet have released crates (git depe
 Due to the need for the use of interrupts not using a framework was not an option (seeing that frameworks are available).
 While Embassy looks very promising, the lack of a stable release and the requirement for nightly Rust it however felt
 premature to use it for this project. This led to the decision for RTIC.
+
+Note that no board support package has been used for the Nucleo F401RE because none of the board-specific features is
+being used (and also, the available [nucleo-f401re](https://crates.io/crates/nucleo-f401re) crate wouldn't offer too much
+in terms of additional features besides access to the LED and button (neither of which is accessible with the board mounted
+underneath the PCB)).
