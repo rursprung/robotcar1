@@ -51,6 +51,7 @@ impl RemoteControl {
         }
 
         // switch out the buffers
+        filled_buffer.fill(0);
         self.bt_module.rx_buffer = Some(filled_buffer);
 
         self.bt_module.rx_transfer.clear_idle_interrupt();
