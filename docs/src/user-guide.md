@@ -11,7 +11,7 @@ What you'll need in order to use this robotcar:
 To get started follow these steps:
 1. Insert the batteries (beware the polarities! Supported are ca. 1.5V AA batteries) into the battery holder
 2. Insert the battery holder in the chassis (between the axles)
-3. Connect the battery holder to the car using the XC30 power connector
+3. Connect the battery holder to the car using the XD30 power connector
 4. Turn on the car using the switch on its rear
 
 ## Connect With The App

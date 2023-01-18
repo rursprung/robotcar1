@@ -4,9 +4,9 @@ On this, various external components are mounted.
 
 ![3D View of the PCB](img/pcb-3d-view.png)
 
-Power is supplied by 8x AA batteries placed in a battery holder. The battery connection is done using an XC30 connector,
+Power is supplied by 8x AA batteries placed in a battery holder. The battery connection is done using an XD30 connector,
 to make it easier to remove the battery holder.
-A physical on/off switch is included in the power line from the XC30 connector to the PCB.
+A physical on/off switch is included in the power line from the XD30 connector to the PCB.
 This switch is not on the PCB itself because the design of the base car already included one and using that safes space on the PCB.
 
 ## Schematic & PCB Design
