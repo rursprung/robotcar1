@@ -9,11 +9,6 @@ resetting the microcontroller).
 
 So far it seems to be related to I2C communication with the TOF.
 
-## Fix Intermittent Remote Control Bug ([#28](https://github.com/rursprung/robotcar1/issues/28))
-From time to time buttons pressed on the remote control would suddenly no longer be received by the robotcar, or it would
-receive previously sent commands. Debugging has shown that it gets this data from the USART connection (which uses DMA).
-It's unclear if there's a bug in the DMA implementation or if there's a bug either in the phone app or the bluetooth device.
-
 ## Use IMU For Braking Distance ([#27](https://github.com/rursprung/robotcar1/issues/27))
 Currently, the automatic braking collision avoidance uses a fixed distance at which it will engage. Instead of this,
 the IMU could be used to acquire the current velocity (by integrating over the acceleration) which in turn could be
